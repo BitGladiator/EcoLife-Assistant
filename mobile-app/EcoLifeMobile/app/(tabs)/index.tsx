@@ -10,7 +10,7 @@ import {
 import * as ImagePicker from 'expo-image-picker';
 import axios from 'axios';
 
-const API_BASE = 'http://127.0.0.1:5500';
+const API_BASE = 'http://10.219.49.127:5500';
 
 type WasteType = 'recyclable' | 'organic' | 'landfill';
 
