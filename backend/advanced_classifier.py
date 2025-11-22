@@ -7,6 +7,7 @@ class AdvancedWasteClassifier:
     def __init__(self):
         self.categories = ADVANCED_WASTE_CATEGORIES
         self.model = self.create_model()
+        self.train_dummy()  
         
     def create_model(self):
         model = tf.keras.Sequential([
@@ -34,7 +35,7 @@ class AdvancedWasteClassifier:
         y_train = tf.keras.utils.to_categorical(np.random.randint(0, 9, (100,)), 9)
         
         self.model.fit(x_train, y_train, epochs=1, verbose=0)
-        print("Model trained with dummy data")
+        print("TensorFlow model trained with dummy data")
     
     def predict(self, image):
         try:
@@ -82,10 +83,3 @@ class AdvancedWasteClassifier:
             8: 'e_waste'
         }
         return category_mapping.get(class_idx, 'landfill_general')
-
-if __name__ == "__main__":
-    classifier = AdvancedWasteClassifier()
-    classifier.train_dummy()
-    test_image = np.random.randint(0, 255, (224, 224, 3), dtype=np.uint8)
-    result = classifier.predict(test_image)
-    print("Test classification:", result)

@@ -1,0 +1,9 @@
+numpy==1.24.3
+tensorflow-macos==2.13.0
+tensorflow-metal==1.0.1
+ml-dtypes==0.2.0
+opencv-python==4.8.1.78
+flask==2.3.3
+flask-cors==4.0.0
+easyocr==1.7.0
+pillow==10.0.1
