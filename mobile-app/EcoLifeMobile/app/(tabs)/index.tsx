@@ -834,7 +834,6 @@ export default function HomeScreen() {
                       </View>
                     )}
 
-                    {/* Recommendations */}
                     {result.recommendations.length > 0 && (
                       <View style={styles.section}>
                         <Text style={styles.sectionTitle}>Recommendations</Text>
@@ -848,7 +847,6 @@ export default function HomeScreen() {
                       </View>
                     )}
 
-                    {/* Extracted Text Preview */}
                     {result.extracted_text &&
                       result.extracted_text !== "No text detected" && (
                         <View style={styles.section}>
