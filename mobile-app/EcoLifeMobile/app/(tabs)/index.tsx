@@ -8,6 +8,7 @@ import {
   ActivityIndicator,
   Modal,
   Image,
+  StatusBar,
 } from "react-native";
 import * as ImagePicker from "expo-image-picker";
 import axios from "axios";
@@ -57,17 +58,28 @@ type ApiResult =
   | ProductResult
   | { error: string };
 
+const MenuIcon = () => (
+  <Svg width="24" height="24" viewBox="0 0 24 24" fill="none">
+    <Path
+      d="M3 12H21M3 6H21M3 18H21"
+      stroke="#065F46"
+      strokeWidth="2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    />
+  </Svg>
+);
 
 const CameraIcon = () => (
   <Svg width="24" height="24" viewBox="0 0 24 24" fill="none">
     <Path
       d="M23 19C23 19.5304 22.7893 20.0391 22.4142 20.4142C22.0391 20.7893 21.5304 21 21 21H3C2.46957 21 1.96086 20.7893 1.58579 20.4142C1.21071 20.0391 1 19.5304 1 19V8C1 7.46957 1.21071 6.96086 1.58579 6.58579C1.96086 6.21071 2.46957 6 3 6H7L9 3H15L17 6H21C21.5304 6 22.0391 6.21071 22.4142 6.58579C22.7893 6.96086 23 7.46957 23 8V19Z"
-      stroke="#059669"
+      stroke="#FFFFFF"
       strokeWidth="2"
       strokeLinecap="round"
       strokeLinejoin="round"
     />
-    <Circle cx="12" cy="13" r="4" stroke="#059669" strokeWidth="2" />
+    <Circle cx="12" cy="13" r="4" stroke="#FFFFFF" strokeWidth="2" />
   </Svg>
 );
 
@@ -75,7 +87,7 @@ const GalleryIcon = () => (
   <Svg width="24" height="24" viewBox="0 0 24 24" fill="none">
     <Path
       d="M4 16L8.586 11.414C8.96106 11.0391 9.46967 10.8284 10 10.8284C10.5303 10.8284 11.0389 11.0391 11.414 11.414L16 16"
-      stroke="#059669"
+      stroke="#FFFFFF"
       strokeWidth="2"
       strokeLinecap="round"
       strokeLinejoin="round"
@@ -86,7 +98,7 @@ const GalleryIcon = () => (
       width="18"
       height="18"
       rx="2"
-      stroke="#059669"
+      stroke="#FFFFFF"
       strokeWidth="2"
     />
   </Svg>
@@ -147,13 +159,13 @@ const LeafIcon = () => (
   <Svg width="24" height="24" viewBox="0 0 24 24" fill="none">
     <Path
       d="M12 2C12 2 3 7 3 14C3 17.866 6.582 21 12 21C17.418 21 21 17.866 21 14C21 7 12 2 12 2Z"
-      stroke="#059669"
+      stroke="#FFFFFF"
       strokeWidth="2"
     />
-    <Path d="M12 2V21" stroke="#059669" strokeWidth="2" />
+    <Path d="M12 2V21" stroke="#FFFFFF" strokeWidth="2" />
     <Path
       d="M12 13C15.866 13 19 10.866 19 7"
-      stroke="#059669"
+      stroke="#FFFFFF"
       strokeWidth="2"
     />
   </Svg>
@@ -171,12 +183,25 @@ const AnalyzeIcon = () => (
   </Svg>
 );
 
+const CloseIcon = () => (
+  <Svg width="24" height="24" viewBox="0 0 24 24" fill="none">
+    <Path
+      d="M18 6L6 18M6 6L18 18"
+      stroke="#065F46"
+      strokeWidth="2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    />
+  </Svg>
+);
+
 export default function HomeScreen() {
   const [result, setResult] = useState<ApiResult | null>(null);
   const [loading, setLoading] = useState(false);
   const [mode, setMode] = useState<"simple" | "advanced">("advanced");
   const [showModeModal, setShowModeModal] = useState(false);
   const [selectedImage, setSelectedImage] = useState<string | null>(null);
+  const [showSidebar, setShowSidebar] = useState(false);
 
   const takePicture = async () => {
     try {
@@ -304,343 +329,397 @@ export default function HomeScreen() {
   };
 
   return (
-    <ScrollView style={styles.container} showsVerticalScrollIndicator={false}>
-      <View style={styles.header}>
+    <View style={styles.container}>
+      <StatusBar backgroundColor="#065F46" barStyle="light-content" />
+      
+      <View style={styles.topBar}>
+        <TouchableOpacity 
+          style={styles.menuButton}
+          onPress={() => setShowSidebar(true)}
+        >
+          <MenuIcon />
+        </TouchableOpacity>
+        
         <View style={styles.titleContainer}>
           <LeafIcon />
-          <Text style={styles.title}>EcoLife</Text>
+          <Text style={styles.topBarTitle}>EcoLife</Text>
         </View>
-        <Text style={styles.subtitle}>Advanced Waste Intelligence</Text>
-
-        <TouchableOpacity
-          style={styles.modeButton}
-          onPress={() => setShowModeModal(true)}
-        >
-          <Text style={styles.modeButtonText}>
-            {mode === "advanced"
-              ? "Advanced Analysis"
-              : "Simple Classification"}
-          </Text>
-        </TouchableOpacity>
+        
+        <View style={styles.placeholder} />
       </View>
 
-      <View style={styles.card}>
-        <View style={styles.cardHeader}>
-          <RecycleIcon />
-          <Text style={styles.cardTitle}>Waste Classification</Text>
-        </View>
-        <Text style={styles.cardDescription}>
-          {mode === "advanced"
-            ? "Get detailed analysis with 9 waste categories, disposal instructions, and environmental guidance"
-            : "Quick classification into recyclable, organic, or landfill categories"}
-        </Text>
-        <View style={styles.buttonRow}>
-          <TouchableOpacity style={styles.primaryButton} onPress={takePicture}>
-            <CameraIcon />
-            <Text style={styles.buttonText}>Camera</Text>
-          </TouchableOpacity>
-          <TouchableOpacity style={styles.primaryButton} onPress={pickImage}>
-            <GalleryIcon />
-            <Text style={styles.buttonText}>Gallery</Text>
-          </TouchableOpacity>
-        </View>
-      </View>
-
-      <View style={styles.card}>
-        <View style={styles.cardHeader}>
-          <AnalyzeIcon />
-          <Text style={styles.cardTitle}>Product Analysis</Text>
-        </View>
-        <Text style={styles.cardDescription}>
-          Analyze product sustainability and environmental impact metrics
-        </Text>
-        <TouchableOpacity
-          style={styles.secondaryButton}
-          onPress={analyzeProduct}
-        >
-          <Text style={styles.secondaryButtonText}>Analyze Product</Text>
-        </TouchableOpacity>
-      </View>
-
-      {selectedImage && (
-        <View style={styles.imagePreview}>
-          <Text style={styles.previewTitle}>Selected Image</Text>
-          <Image source={{ uri: selectedImage }} style={styles.previewImage} />
-        </View>
-      )}
-
-      {loading && (
-        <View style={styles.loadingCard}>
-          <ActivityIndicator size="large" color="#059669" />
-          <Text style={styles.loadingText}>
-            {mode === "advanced"
-              ? "Running advanced analysis..."
-              : "Processing image..."}
-          </Text>
-        </View>
-      )}
-
-      {result && !loading && (
-        <View style={styles.resultCard}>
-          {"error" in result ? (
-            <View style={styles.errorContainer}>
-              <Text style={styles.errorTitle}>Analysis Error</Text>
-              <Text style={styles.errorDetail}>{result.error}</Text>
-              <Text style={styles.errorHint}>
-                Ensure your backend server is running on {API_BASE}
-              </Text>
+      <Modal
+        visible={showSidebar}
+        transparent={true}
+        animationType="slide"
+        onRequestClose={() => setShowSidebar(false)}
+      >
+        <View style={styles.sidebarOverlay}>
+          <View style={styles.sidebarContent}>
+            <View style={styles.sidebarHeader}>
+              <Text style={styles.sidebarTitle}>Menu</Text>
+              <TouchableOpacity onPress={() => setShowSidebar(false)}>
+                <CloseIcon />
+              </TouchableOpacity>
             </View>
-          ) : (
-            <>
-              {isAdvancedResult(result) && (
-                <>
-                  <View style={styles.resultHeader}>
-                    <RecycleIcon />
-                    <View style={styles.resultHeaderText}>
-                      <Text style={styles.resultTitle}>
-                        {result.category_name}
+            
+            <TouchableOpacity style={styles.sidebarItem}>
+              <Text style={styles.sidebarItemText}>Waste Classification</Text>
+            </TouchableOpacity>
+            
+            <TouchableOpacity style={styles.sidebarItem}>
+              <Text style={styles.sidebarItemText}>Product Analysis</Text>
+            </TouchableOpacity>
+            
+            <TouchableOpacity style={styles.sidebarItem}>
+              <Text style={styles.sidebarItemText}>History</Text>
+            </TouchableOpacity>
+            
+            <TouchableOpacity style={styles.sidebarItem}>
+              <Text style={styles.sidebarItemText}>Settings</Text>
+            </TouchableOpacity>
+            
+            <TouchableOpacity style={styles.sidebarItem}>
+              <Text style={styles.sidebarItemText}>About</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      </Modal>
+
+      <ScrollView style={styles.scrollView} showsVerticalScrollIndicator={false}>
+        <View style={styles.header}>
+          <Text style={styles.subtitle}>Advanced Waste Intelligence</Text>
+
+          <TouchableOpacity
+            style={styles.modeButton}
+            onPress={() => setShowModeModal(true)}
+          >
+            <Text style={styles.modeButtonText}>
+              {mode === "advanced"
+                ? "Advanced Analysis"
+                : "Simple Classification"}
+            </Text>
+          </TouchableOpacity>
+        </View>
+
+        <View style={styles.card}>
+          <View style={styles.cardHeader}>
+            <RecycleIcon />
+            <Text style={styles.cardTitle}>Waste Classification</Text>
+          </View>
+          <Text style={styles.cardDescription}>
+            {mode === "advanced"
+              ? "Get detailed analysis with 9 waste categories, disposal instructions, and environmental guidance"
+              : "Quick classification into recyclable, organic, or landfill categories"}
+          </Text>
+          <View style={styles.buttonRow}>
+            <TouchableOpacity style={styles.primaryButton} onPress={takePicture}>
+              <CameraIcon />
+              <Text style={styles.buttonText}>Camera</Text>
+            </TouchableOpacity>
+            <TouchableOpacity style={styles.primaryButton} onPress={pickImage}>
+              <GalleryIcon />
+              <Text style={styles.buttonText}>Gallery</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+
+        <View style={styles.card}>
+          <View style={styles.cardHeader}>
+            <AnalyzeIcon />
+            <Text style={styles.cardTitle}>Product Analysis</Text>
+          </View>
+          <Text style={styles.cardDescription}>
+            Analyze product sustainability and environmental impact metrics
+          </Text>
+          <TouchableOpacity
+            style={styles.secondaryButton}
+            onPress={analyzeProduct}
+          >
+            <Text style={styles.secondaryButtonText}>Analyze Product</Text>
+          </TouchableOpacity>
+        </View>
+
+        {selectedImage && (
+          <View style={styles.imagePreview}>
+            <Text style={styles.previewTitle}>Selected Image</Text>
+            <Image source={{ uri: selectedImage }} style={styles.previewImage} />
+          </View>
+        )}
+
+        {loading && (
+          <View style={styles.loadingCard}>
+            <ActivityIndicator size="large" color="#059669" />
+            <Text style={styles.loadingText}>
+              {mode === "advanced"
+                ? "Running advanced analysis..."
+                : "Processing image..."}
+            </Text>
+          </View>
+        )}
+
+        {result && !loading && (
+          <View style={styles.resultCard}>
+            {"error" in result ? (
+              <View style={styles.errorContainer}>
+                <Text style={styles.errorTitle}>Analysis Error</Text>
+                <Text style={styles.errorDetail}>{result.error}</Text>
+                <Text style={styles.errorHint}>
+                  Ensure your backend server is running on {API_BASE}
+                </Text>
+              </View>
+            ) : (
+              <>
+                {isAdvancedResult(result) && (
+                  <>
+                    <View style={styles.resultHeader}>
+                      <RecycleIcon />
+                      <View style={styles.resultHeaderText}>
+                        <Text style={styles.resultTitle}>
+                          {result.category_name}
+                        </Text>
+                        <Text
+                          style={[
+                            styles.resultType,
+                            { color: getWasteColor(result.waste_type) },
+                          ]}
+                        >
+                          {formatWasteType(result.waste_type)}
+                        </Text>
+                      </View>
+                    </View>
+
+                    <View style={styles.confidenceBar}>
+                      <Text style={styles.confidenceLabel}>Confidence Level</Text>
+                      <View style={styles.progressBar}>
+                        <View
+                          style={[
+                            styles.progressFill,
+                            {
+                              width: `${result.confidence * 100}%`,
+                              backgroundColor: getWasteColor(result.waste_type),
+                            },
+                          ]}
+                        />
+                      </View>
+                      <Text style={styles.confidenceValue}>
+                        {Math.round(result.confidence * 100)}%
                       </Text>
+                    </View>
+
+                    <View style={styles.section}>
+                      <Text style={styles.sectionTitle}>Recycling Code</Text>
+                      <View style={styles.badge}>
+                        <Text style={styles.badgeText}>
+                          {result.recycling_code}
+                        </Text>
+                      </View>
+                    </View>
+
+                    <View style={styles.section}>
+                      <Text style={styles.sectionTitle}>
+                        Disposal Instructions
+                      </Text>
+                      <Text style={styles.sectionContent}>
+                        {result.disposal_instructions}
+                      </Text>
+                    </View>
+
+                    {result.subcategories.length > 0 && (
+                      <View style={styles.section}>
+                        <Text style={styles.sectionTitle}>Subcategories</Text>
+                        <View style={styles.chipContainer}>
+                          {result.subcategories.map((sub, idx) => (
+                            <View key={idx} style={styles.chip}>
+                              <Text style={styles.chipText}>
+                                {formatWasteType(sub)}
+                              </Text>
+                            </View>
+                          ))}
+                        </View>
+                      </View>
+                    )}
+
+                    {result.contamination_warnings.length > 0 && (
+                      <View style={[styles.section, styles.warningSection]}>
+                        <View style={styles.warningSectionHeader}>
+                          <WarningIcon />
+                          <Text style={styles.sectionTitle}>
+                            Contamination Warnings
+                          </Text>
+                        </View>
+                        {result.contamination_warnings.map((warning, idx) => (
+                          <Text key={idx} style={styles.warningText}>
+                            • {formatWasteType(warning)}
+                          </Text>
+                        ))}
+                      </View>
+                    )}
+
+                    {result.tips.length > 0 && (
+                      <View style={styles.section}>
+                        <Text style={styles.sectionTitle}>
+                          Environmental Tips
+                        </Text>
+                        {result.tips.slice(0, 3).map((tip, idx) => (
+                          <Text key={idx} style={styles.tipText}>
+                            • {tip}
+                          </Text>
+                        ))}
+                      </View>
+                    )}
+                  </>
+                )}
+
+                {isSimpleResult(result) && (
+                  <>
+                    <View style={styles.resultHeader}>
+                      <Text style={styles.resultTitle}>
+                        Classification Result
+                      </Text>
+                    </View>
+
+                    <View
+                      style={[
+                        styles.simpleResult,
+                        { borderColor: getWasteColor(result.waste_type) },
+                      ]}
+                    >
                       <Text
                         style={[
-                          styles.resultType,
+                          styles.simpleResultText,
                           { color: getWasteColor(result.waste_type) },
                         ]}
                       >
                         {formatWasteType(result.waste_type)}
                       </Text>
-                    </View>
-                  </View>
-
-                  <View style={styles.confidenceBar}>
-                    <Text style={styles.confidenceLabel}>Confidence Level</Text>
-                    <View style={styles.progressBar}>
-                      <View
-                        style={[
-                          styles.progressFill,
-                          {
-                            width: `${result.confidence * 100}%`,
-                            backgroundColor: getWasteColor(result.waste_type),
-                          },
-                        ]}
-                      />
-                    </View>
-                    <Text style={styles.confidenceValue}>
-                      {Math.round(result.confidence * 100)}%
-                    </Text>
-                  </View>
-
-                  <View style={styles.section}>
-                    <Text style={styles.sectionTitle}>Recycling Code</Text>
-                    <View style={styles.badge}>
-                      <Text style={styles.badgeText}>
-                        {result.recycling_code}
+                      <Text style={styles.confidenceText}>
+                        {Math.round(result.confidence * 100)}% confidence
                       </Text>
                     </View>
-                  </View>
 
-                  <View style={styles.section}>
-                    <Text style={styles.sectionTitle}>
-                      Disposal Instructions
-                    </Text>
-                    <Text style={styles.sectionContent}>
-                      {result.disposal_instructions}
-                    </Text>
-                  </View>
+                    {result.tips.length > 0 && (
+                      <View style={styles.section}>
+                        <Text style={styles.sectionTitle}>Guidance</Text>
+                        {result.tips.map((tip, idx) => (
+                          <Text key={idx} style={styles.tipText}>
+                            • {tip}
+                          </Text>
+                        ))}
+                      </View>
+                    )}
+                  </>
+                )}
 
-                  {result.subcategories.length > 0 && (
-                    <View style={styles.section}>
-                      <Text style={styles.sectionTitle}>Subcategories</Text>
-                      <View style={styles.chipContainer}>
-                        {result.subcategories.map((sub, idx) => (
-                          <View key={idx} style={styles.chip}>
-                            <Text style={styles.chipText}>
-                              {formatWasteType(sub)}
-                            </Text>
-                          </View>
+                {isProductResult(result) && (
+                  <>
+                    <Text style={styles.resultTitle}>Product Sustainability</Text>
+
+                    <View style={styles.scoreSection}>
+                      <Text style={styles.scoreLabel}>Sustainability Score</Text>
+                      <View style={styles.scoreDisplay}>
+                        <Text style={styles.scoreValue}>
+                          {result.sustainability_score}
+                        </Text>
+                        <Text style={styles.scoreMax}>/10</Text>
+                      </View>
+                      <View style={styles.starsRow}>
+                        {Array.from({ length: 5 }, (_, i) => (
+                          <StarIcon
+                            key={i}
+                            filled={
+                              i < Math.floor(result.sustainability_score / 2)
+                            }
+                          />
                         ))}
                       </View>
                     </View>
-                  )}
 
-                  {result.contamination_warnings.length > 0 && (
-                    <View style={[styles.section, styles.warningSection]}>
-                      <View style={styles.warningSectionHeader}>
-                        <WarningIcon />
+                    {result.found_keywords.length > 0 && (
+                      <View style={styles.section}>
                         <Text style={styles.sectionTitle}>
-                          Contamination Warnings
+                          Keywords Identified
+                        </Text>
+                        <View style={styles.chipContainer}>
+                          {result.found_keywords.map((kw, idx) => (
+                            <View key={idx} style={styles.chip}>
+                              <Text style={styles.chipText}>{kw}</Text>
+                            </View>
+                          ))}
+                        </View>
+                      </View>
+                    )}
+
+                    {result.extracted_text && (
+                      <View style={styles.section}>
+                        <Text style={styles.sectionTitle}>Extracted Text</Text>
+                        <Text style={styles.sectionContent}>
+                          {result.extracted_text}
                         </Text>
                       </View>
-                      {result.contamination_warnings.map((warning, idx) => (
-                        <Text key={idx} style={styles.warningText}>
-                          • {formatWasteType(warning)}
-                        </Text>
-                      ))}
-                    </View>
-                  )}
-
-                  {result.tips.length > 0 && (
-                    <View style={styles.section}>
-                      <Text style={styles.sectionTitle}>
-                        Environmental Tips
-                      </Text>
-                      {result.tips.slice(0, 3).map((tip, idx) => (
-                        <Text key={idx} style={styles.tipText}>
-                          • {tip}
-                        </Text>
-                      ))}
-                    </View>
-                  )}
-                </>
-              )}
-
-              {isSimpleResult(result) && (
-                <>
-                  <View style={styles.resultHeader}>
-                    <Text style={styles.resultTitle}>
-                      Classification Result
-                    </Text>
-                  </View>
-
-                  <View
-                    style={[
-                      styles.simpleResult,
-                      { borderColor: getWasteColor(result.waste_type) },
-                    ]}
-                  >
-                    <Text
-                      style={[
-                        styles.simpleResultText,
-                        { color: getWasteColor(result.waste_type) },
-                      ]}
-                    >
-                      {formatWasteType(result.waste_type)}
-                    </Text>
-                    <Text style={styles.confidenceText}>
-                      {Math.round(result.confidence * 100)}% confidence
-                    </Text>
-                  </View>
-
-                  {result.tips.length > 0 && (
-                    <View style={styles.section}>
-                      <Text style={styles.sectionTitle}>Guidance</Text>
-                      {result.tips.map((tip, idx) => (
-                        <Text key={idx} style={styles.tipText}>
-                          • {tip}
-                        </Text>
-                      ))}
-                    </View>
-                  )}
-                </>
-              )}
-
-              {isProductResult(result) && (
-                <>
-                  <Text style={styles.resultTitle}>Product Sustainability</Text>
-
-                  <View style={styles.scoreSection}>
-                    <Text style={styles.scoreLabel}>Sustainability Score</Text>
-                    <View style={styles.scoreDisplay}>
-                      <Text style={styles.scoreValue}>
-                        {result.sustainability_score}
-                      </Text>
-                      <Text style={styles.scoreMax}>/10</Text>
-                    </View>
-                    <View style={styles.starsRow}>
-                      {Array.from({ length: 5 }, (_, i) => (
-                        <StarIcon
-                          key={i}
-                          filled={
-                            i < Math.floor(result.sustainability_score / 2)
-                          }
-                        />
-                      ))}
-                    </View>
-                  </View>
-
-                  {result.found_keywords.length > 0 && (
-                    <View style={styles.section}>
-                      <Text style={styles.sectionTitle}>
-                        Keywords Identified
-                      </Text>
-                      <View style={styles.chipContainer}>
-                        {result.found_keywords.map((kw, idx) => (
-                          <View key={idx} style={styles.chip}>
-                            <Text style={styles.chipText}>{kw}</Text>
-                          </View>
-                        ))}
-                      </View>
-                    </View>
-                  )}
-
-                  {result.extracted_text && (
-                    <View style={styles.section}>
-                      <Text style={styles.sectionTitle}>Extracted Text</Text>
-                      <Text style={styles.sectionContent}>
-                        {result.extracted_text}
-                      </Text>
-                    </View>
-                  )}
-                </>
-              )}
-            </>
-          )}
-        </View>
-      )}
-
-      <Modal
-        visible={showModeModal}
-        transparent={true}
-        animationType="slide"
-        onRequestClose={() => setShowModeModal(false)}
-      >
-        <View style={styles.modalOverlay}>
-          <View style={styles.modalContent}>
-            <Text style={styles.modalTitle}>Select Analysis Mode</Text>
-
-            <TouchableOpacity
-              style={[
-                styles.modeOption,
-                mode === "advanced" && styles.modeOptionSelected,
-              ]}
-              onPress={() => {
-                setMode("advanced");
-                setShowModeModal(false);
-              }}
-            >
-              <Text style={styles.modeOptionTitle}>Advanced Analysis</Text>
-              <Text style={styles.modeOptionDesc}>
-                Detailed classification with 9 waste categories, disposal
-                instructions, recycling codes, and environmental guidance
-              </Text>
-            </TouchableOpacity>
-
-            <TouchableOpacity
-              style={[
-                styles.modeOption,
-                mode === "simple" && styles.modeOptionSelected,
-              ]}
-              onPress={() => {
-                setMode("simple");
-                setShowModeModal(false);
-              }}
-            >
-              <Text style={styles.modeOptionTitle}>Simple Classification</Text>
-              <Text style={styles.modeOptionDesc}>
-                Quick three-category classification: recyclable, organic, or
-                landfill waste
-              </Text>
-            </TouchableOpacity>
-
-            <TouchableOpacity
-              style={styles.modalCloseButton}
-              onPress={() => setShowModeModal(false)}
-            >
-              <Text style={styles.modalCloseButtonText}>Cancel</Text>
-            </TouchableOpacity>
+                    )}
+                  </>
+                )}
+              </>
+            )}
           </View>
-        </View>
-      </Modal>
-    </ScrollView>
+        )}
+
+        <Modal
+          visible={showModeModal}
+          transparent={true}
+          animationType="slide"
+          onRequestClose={() => setShowModeModal(false)}
+        >
+          <View style={styles.modalOverlay}>
+            <View style={styles.modalContent}>
+              <Text style={styles.modalTitle}>Select Analysis Mode</Text>
+
+              <TouchableOpacity
+                style={[
+                  styles.modeOption,
+                  mode === "advanced" && styles.modeOptionSelected,
+                ]}
+                onPress={() => {
+                  setMode("advanced");
+                  setShowModeModal(false);
+                }}
+              >
+                <Text style={styles.modeOptionTitle}>Advanced Analysis</Text>
+                <Text style={styles.modeOptionDesc}>
+                  Detailed classification with 9 waste categories, disposal
+                  instructions, recycling codes, and environmental guidance
+                </Text>
+              </TouchableOpacity>
+
+              <TouchableOpacity
+                style={[
+                  styles.modeOption,
+                  mode === "simple" && styles.modeOptionSelected,
+                ]}
+                onPress={() => {
+                  setMode("simple");
+                  setShowModeModal(false);
+                }}
+              >
+                <Text style={styles.modeOptionTitle}>Simple Classification</Text>
+                <Text style={styles.modeOptionDesc}>
+                  Quick three-category classification: recyclable, organic, or
+                  landfill waste
+                </Text>
+              </TouchableOpacity>
+
+              <TouchableOpacity
+                style={styles.modalCloseButton}
+                onPress={() => setShowModeModal(false)}
+              >
+                <Text style={styles.modalCloseButtonText}>Cancel</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </Modal>
+      </ScrollView>
+    </View>
   );
 }
 
@@ -648,24 +727,80 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: "#F8FCF9",
-    paddingHorizontal: 20,
-    paddingTop: 50,
   },
-  header: {
+  scrollView: {
+    flex: 1,
+    paddingHorizontal: 20,
+    paddingTop: 20,
+  },
+  topBar: {
+    flexDirection: "row",
     alignItems: "center",
-    marginBottom: 30,
+    justifyContent: "space-between",
+    backgroundColor: "#065F46",
+    paddingHorizontal: 20,
+    paddingVertical: 16,
+    paddingTop: 50,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 8,
+    elevation: 4,
+  },
+  menuButton: {
+    padding: 4,
   },
   titleContainer: {
     flexDirection: "row",
     alignItems: "center",
-    gap: 12,
-    marginBottom: 8,
+    gap: 8,
   },
-  title: {
-    fontSize: 36,
-    fontWeight: "800",
-    color: "#065F46",
-    letterSpacing: -0.5,
+  topBarTitle: {
+    fontSize: 20,
+    fontWeight: "700",
+    color: "#FFFFFF",
+  },
+  placeholder: {
+    width: 24,
+  },
+  sidebarOverlay: {
+    flex: 1,
+    backgroundColor: "rgba(0, 0, 0, 0.5)",
+  },
+  sidebarContent: {
+    width: "80%",
+    height: "100%",
+    backgroundColor: "#FFFFFF",
+    paddingTop: 60,
+    paddingHorizontal: 20,
+  },
+  sidebarHeader: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    marginBottom: 30,
+    paddingBottom: 20,
+    borderBottomWidth: 1,
+    borderBottomColor: "#E5E7EB",
+  },
+  sidebarTitle: {
+    fontSize: 24,
+    fontWeight: "700",
+    color: "#064E3B",
+  },
+  sidebarItem: {
+    paddingVertical: 16,
+    borderBottomWidth: 1,
+    borderBottomColor: "#F3F4F6",
+  },
+  sidebarItemText: {
+    fontSize: 16,
+    fontWeight: "600",
+    color: "#374151",
+  },
+  header: {
+    alignItems: "center",
+    marginBottom: 30,
   },
   subtitle: {
     fontSize: 16,
