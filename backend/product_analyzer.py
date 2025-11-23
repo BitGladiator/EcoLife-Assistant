@@ -18,27 +18,26 @@ class ProductAnalyzer:
             else:
                 gray = image
             
-            # Multiple preprocessing techniques
             processed_images = []
             
-            # Original grayscale
+         
             processed_images.append(gray)
             
-            # Contrast enhancement
+           
             clahe = cv2.createCLAHE(clipLimit=2.0, tileGridSize=(8,8))
             enhanced = clahe.apply(gray)
             processed_images.append(enhanced)
             
-            # Gaussian blur for noise reduction
+        
             blurred = cv2.GaussianBlur(gray, (3, 3), 0)
             processed_images.append(blurred)
             
-            # Sharpening
+        
             kernel = np.array([[-1,-1,-1], [-1,9,-1], [-1,-1,-1]])
             sharpened = cv2.filter2D(gray, -1, kernel)
             processed_images.append(sharpened)
             
-            # Adaptive threshold
+    
             thresh = cv2.adaptiveThreshold(gray, 255, cv2.ADAPTIVE_THRESH_GAUSSIAN_C, 
                                          cv2.THRESH_BINARY, 11, 2)
             processed_images.append(thresh)
@@ -58,14 +57,14 @@ class ProductAnalyzer:
             
             for i, processed_img in enumerate(processed_images):
                 try:
-                    # Try different barcode detection methods
+            
                     barcodes = pyzbar.decode(processed_img)
                     
                     for barcode in barcodes:
                         barcode_data = barcode.data.decode('utf-8')
                         barcode_type = barcode.type
                         
-                        # Validate barcode format
+                     
                         if self.validate_barcode_format(barcode_data, barcode_type):
                             barcode_info = {
                                 'data': barcode_data,
@@ -80,7 +79,7 @@ class ProductAnalyzer:
                     print(f"Barcode detection attempt {i} failed: {e}")
                     continue
             
-            # Remove duplicates and sort by quality
+           
             unique_barcodes = self.remove_duplicate_barcodes(all_barcodes)
             unique_barcodes.sort(key=lambda x: x['quality_score'], reverse=True)
             
@@ -95,27 +94,27 @@ class ProductAnalyzer:
         """Validate barcode format and checksum"""
         try:
             if barcode_type == 'EAN13':
-                # EAN-13 should be 13 digits
+               
                 if len(barcode_data) != 13 or not barcode_data.isdigit():
                     return False
                 return self.validate_ean13_checksum(barcode_data)
                 
             elif barcode_type == 'UPC-A':
-                # UPC-A should be 12 digits
+            
                 if len(barcode_data) != 12 or not barcode_data.isdigit():
                     return False
                 return self.validate_upca_checksum(barcode_data)
                 
             elif barcode_type == 'CODE128':
-                # CODE128 can be alphanumeric, basic validation
+             
                 return len(barcode_data) >= 4 and len(barcode_data) <= 50
                 
             elif barcode_type == 'QRCODE':
-                # QR codes can contain various data
+             
                 return len(barcode_data) > 0
                 
             else:
-                # For other types, basic validation
+             
                 return len(barcode_data) > 0
                 
         except Exception:
@@ -150,19 +149,19 @@ class ProductAnalyzer:
         try:
             quality_score = 0
             
-            # Score based on barcode size relative to image
+           
             barcode_area = barcode.rect.width * barcode.rect.height
             image_area = image.shape[0] * image.shape[1]
             size_ratio = barcode_area / image_area
             
-            if size_ratio > 0.1:  # Barcode takes up significant portion of image
+            if size_ratio > 0.1:  
                 quality_score += 40
             elif size_ratio > 0.05:
                 quality_score += 20
             elif size_ratio > 0.02:
                 quality_score += 10
             
-            # Score based on barcode position (center is better)
+          
             center_x = image.shape[1] // 2
             center_y = image.shape[0] // 2
             barcode_center_x = barcode.rect.left + barcode.rect.width // 2
@@ -179,18 +178,18 @@ class ProductAnalyzer:
             elif distance_from_center < max_distance * 0.5:
                 quality_score += 10
             
-            # Score based on barcode orientation (horizontal is better)
+           
             if barcode.rect.width > barcode.rect.height * 1.5:
-                quality_score += 30  # Horizontal barcode
+                quality_score += 30 
             elif barcode.rect.height > barcode.rect.width * 1.5:
-                quality_score += 10  # Vertical barcode
+                quality_score += 10  
             else:
-                quality_score += 5   # Square barcode
+                quality_score += 5 
             
             return min(100, quality_score)
             
         except Exception:
-            return 50  # Default quality score
+            return 50  
     
     def remove_duplicate_barcodes(self, barcodes):
         """Remove duplicate barcodes while keeping the highest quality one"""
@@ -201,7 +200,7 @@ class ProductAnalyzer:
             if barcode_data not in unique_barcodes:
                 unique_barcodes[barcode_data] = barcode
             else:
-                # Keep the higher quality barcode
+            
                 if barcode['quality_score'] > unique_barcodes[barcode_data]['quality_score']:
                     unique_barcodes[barcode_data] = barcode
         
@@ -210,12 +209,11 @@ class ProductAnalyzer:
     def fetch_product_info_from_barcode(self, barcode):
         """Enhanced product information fetching with multiple data sources"""
         try:
-            # Try Open Food Facts first
             product_info = self.fetch_from_open_food_facts(barcode)
             if product_info['found']:
                 return product_info
             
-            # If not found, try other sources
+
             product_info = self.fetch_from_barcode_lookup(barcode)
             if product_info['found']:
                 return product_info
@@ -258,7 +256,6 @@ class ProductAnalyzer:
     def fetch_from_barcode_lookup(self, barcode):
         """Alternative barcode lookup service"""
         try:
-            # Using a free barcode lookup service as fallback
             url = f"https://api.barcodelookup.com/v3/products?barcode={barcode}&formatted=y&key=demo"
             response = requests.get(url, timeout=10)
             
@@ -282,13 +279,11 @@ class ProductAnalyzer:
     def extract_text(self, image):
         """Extract text from image using OCR"""
         try:
-            # Preprocess image for better OCR
             if len(image.shape) == 3:
                 gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
             else:
                 gray = image
             
-            # Enhance contrast for better text recognition
             clahe = cv2.createCLAHE(clipLimit=2.0, tileGridSize=(8,8))
             enhanced = clahe.apply(gray)
             
@@ -431,7 +426,7 @@ class ProductAnalyzer:
         
         if barcodes:
             result['barcode_detected'] = True
-            best_barcode = barcodes[0]  # Highest quality barcode
+            best_barcode = barcodes[0] 
             barcode_data = best_barcode['data']
             
             print(f"Barcode detected: {barcode_data} (Type: {best_barcode['type']})")
