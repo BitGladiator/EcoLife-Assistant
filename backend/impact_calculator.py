@@ -94,7 +94,7 @@ class ImpactCalculator:
             
             waste_counts[waste_type] = waste_counts.get(waste_type, 0) + 1
         
-        # Calculate equivalents
+        
         equivalents = self.calculate_equivalents(total_co2, total_energy)
         
         return {
@@ -111,11 +111,10 @@ class ImpactCalculator:
         """Convert savings to relatable equivalents"""
         equivalents = {}
         
-        # CO2 equivalents
-        equivalents['cars_off_road_days'] = round(co2_kg / 4.6, 2)  # 4.6 kg CO2 per car per day
-        equivalents['trees_planted'] = round(co2_kg / 21, 2)  # One tree absorbs ~21 kg CO2/year
-        equivalents['smartphones_charged'] = round(energy_kwh / 0.012, 0)  # 12 Wh per charge
-        equivalents['miles_not_driven'] = round(co2_kg / 0.411, 2)  # 0.411 kg CO2 per mile
+        equivalents['cars_off_road_days'] = round(co2_kg / 4.6, 2)  
+        equivalents['trees_planted'] = round(co2_kg / 21, 2)  
+        equivalents['smartphones_charged'] = round(energy_kwh / 0.012, 0)  
+        equivalents['miles_not_driven'] = round(co2_kg / 0.411, 2) 
         
         return equivalents
     
