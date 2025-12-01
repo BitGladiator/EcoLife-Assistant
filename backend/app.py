@@ -53,7 +53,6 @@ def decode_image(image_data):
         print(f"Image decoding error: {e}")
         return None
 
-# ============== AUTHENTICATION ROUTES ==============
 
 @app.route('/auth/register', methods=['POST'])
 def register():
@@ -106,7 +105,7 @@ def get_profile():
 
 
 @app.route('/classify-waste/advanced', methods=['POST', 'OPTIONS'])
-@token_required
+# @token_required
 def classify_waste_advanced():
     """Advanced waste classification with user tracking"""
     if request.method == 'OPTIONS':
@@ -135,17 +134,17 @@ def classify_waste_advanced():
             return jsonify(result), 400
         
         # Record scan in user history
-        user_id = request.user_id
-        latitude = data.get('latitude')
-        longitude = data.get('longitude')
+        # user_id = request.user_id
+        # latitude = data.get('latitude')
+        # longitude = data.get('longitude')
         
-        auth_manager.add_scan_record(
-            user_id, 
-            result['waste_type'], 
-            result['confidence'],
-            latitude,
-            longitude
-        )
+        # auth_manager.add_scan_record(
+        #     user_id, 
+        #     result['waste_type'], 
+        #     result['confidence'],
+        #     latitude,
+        #     longitude
+        # )
         
         # Calculate impact
         impact = impact_calculator.calculate_single_item_impact(
@@ -174,7 +173,72 @@ def classify_waste_advanced():
         traceback.print_exc()
         return jsonify({"error": f"Server error: {str(e)}"}), 500
 
+@app.route('/analyze-product', methods=['POST', 'OPTIONS'])
+def analyze_product():
+    """Product sustainability analysis (no auth required)"""
+    if request.method == 'OPTIONS':
+        return _build_cors_preflight_response()
+    
+    try:
+        data = request.json
+        
+        if not data:
+            return jsonify({"error": "No JSON data received"}), 400
+        
+        image_data = data.get('image')
+        if not image_data:
+            return jsonify({"error": "No image data in request"}), 400
+        
+        img = decode_image(image_data)
+        
+        if img is None:
+            return jsonify({
+                "error": "Failed to decode image"
+            }), 400
+        
+      
+        result = product_analyzer.analyze_product(img)
+        
+        if 'error' in result:
+            return jsonify(result), 400
+        
+       
+        response_data = {
+            "sustainability_score": result.get('sustainability_score', 0),
+            "confidence": result.get('confidence', 0),
+            "barcode_detected": result.get('barcode_detected', False),
+            "found_keywords": result.get('found_keywords', []),
+            "extracted_text": result.get('extracted_text', ''),
+            "recommendations": result.get('recommendations', []),
+            "analysis_method": "barcode" if result.get('barcode_detected') else "ocr"
+        }
 
+        if result.get('product_info') and result['product_info'].get('found'):
+            product_info = result['product_info']
+            response_data['product_details'] = {
+                'name': product_info.get('product_name', 'Unknown'),
+                'brand': product_info.get('brands', 'Unknown'),
+                'categories': product_info.get('categories', ''),
+                'nutriscore': product_info.get('nutriscore_grade', 'N/A'),
+                'ecoscore': product_info.get('ecoscore_grade', 'N/A'),
+                'packaging': product_info.get('packaging', ''),
+                'labels': product_info.get('labels', '')
+            }
+        
+
+        if result.get('packaging_materials'):
+            response_data['packaging_analysis'] = {
+                'materials': result.get('packaging_materials', []),
+                'packaging_score': result.get('packaging_score', 0)
+            }
+        
+        response = jsonify(response_data)
+        return _corsify_actual_response(response)
+        
+    except Exception as e:
+        print(f"Product analysis error: {e}")
+        traceback.print_exc()
+        return jsonify({"error": f"Server error: {str(e)}"}), 500
 
 @app.route('/impact', methods=['GET'])
 @token_required
