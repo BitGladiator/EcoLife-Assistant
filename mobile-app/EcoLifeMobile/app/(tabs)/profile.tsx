@@ -9,8 +9,8 @@ import {
   ActivityIndicator,
   Dimensions,
 } from 'react-native';
+import AsyncStorage from '@react-native-async-storage/async-storage'; 
 import Svg, { Path, Circle, G, Line } from 'react-native-svg';
-import axios from 'axios';
 
 const { width } = Dimensions.get('window');
 const API_BASE = "http://10.219.49.127:5500";
@@ -110,21 +110,50 @@ export default function ProfileScreen() {
   const loadProfileData = async () => {
     try {
       setLoading(true);
-    
-      const token = 'your-jwt-token';
       
-      const profileResponse = await axios.get(`${API_BASE}/profile`, {
-        headers: { Authorization: `Bearer ${token}` }
+  
+      const token = await AsyncStorage.getItem('token');
+      
+      if (!token) {
+        console.error('No token found - user not logged in');
+        setLoading(false);
+        return;
+      }
+      
+      console.log('Loading profile with token:', token.substring(0, 30) + '...');
+      
+
+      const profileResponse = await fetch(`${API_BASE}/profile`, {
+        method: 'GET',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        }
       });
       
-      const impactResponse = await axios.get(`${API_BASE}/impact`, {
-        headers: { Authorization: `Bearer ${token}` }
+      const impactResponse = await fetch(`${API_BASE}/impact`, {
+        method: 'GET',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        }
       });
       
-      setProfile(profileResponse.data);
-      setImpact(impactResponse.data);
+      if (!profileResponse.ok || !impactResponse.ok) {
+        const profileError = await profileResponse.json();
+        const impactError = await impactResponse.json();
+        throw new Error(`Profile: ${profileError.error}, Impact: ${impactError.error}`);
+      }
+      
+      const profileData = await profileResponse.json();
+      const impactData = await impactResponse.json();
+      
+      setProfile(profileData);
+      setImpact(impactData);
+      
     } catch (error) {
       console.error('Failed to load profile:', error);
+
     } finally {
       setLoading(false);
     }

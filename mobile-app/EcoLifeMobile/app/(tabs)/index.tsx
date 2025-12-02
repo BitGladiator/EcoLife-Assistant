@@ -11,7 +11,7 @@ import {
   StatusBar,
 } from "react-native";
 import * as ImagePicker from "expo-image-picker";
-import axios from "axios";
+import AsyncStorage from "@react-native-async-storage/async-storage"; 
 import Svg, { Path, Circle, Rect, Line } from "react-native-svg";
 
 const API_BASE = "http://10.219.49.127:5500";
@@ -290,40 +290,71 @@ export default function HomeScreen() {
     setResult(null);
 
     try {
+      // 1. GET TOKEN FROM STORAGE
+      const token = await AsyncStorage.getItem('token');
+      
+      if (!token) {
+        setResult({
+          error: "Please login first. No authentication token found."
+        });
+        setLoading(false);
+        return;
+      }
+
+      console.log("🔑 Token being sent:", token.substring(0, 30) + "...");
+
       const endpoint =
         mode === "advanced"
           ? "/classify-waste/advanced"
           : "/classify-waste/simple";
 
-      const response = await axios.post(
-        `${API_BASE}${endpoint}`,
-        {
-          image: base64Image,
+      // 2. USE FETCH INSTEAD OF AXIOS
+      const response = await fetch(`${API_BASE}${endpoint}`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
         },
-        {
-          timeout: 15000,
-          headers: { "Content-Type": "application/json" },
-        }
-      );
+        body: JSON.stringify({
+          image: base64Image,
+        }),
+      });
 
-      setResult(response.data);
+      const data = await response.json();
+      
+      if (!response.ok) {
+        throw new Error(data.error || 'Classification failed');
+      }
+      
+      setResult(data);
+      
     } catch (error: any) {
       console.error("Classification error:", error);
       setResult({
-        error:
-          error.response?.data?.error ||
-          "Connection failed. Check if backend is running.",
+        error: error.message || "Connection failed. Check if backend is running.",
       });
     } finally {
       setLoading(false);
     }
   };
 
+
   const analyzeProduct = async (base64Image?: string) => {
     setLoading(true);
     setResult(null);
 
     try {
+      // 1. GET TOKEN FROM STORAGE
+      const token = await AsyncStorage.getItem('token');
+      
+      if (!token) {
+        setResult({
+          error: "Please login first. No authentication token found."
+        });
+        setLoading(false);
+        return;
+      }
+
       let imageToSend = base64Image;
 
       if (!imageToSend) {
@@ -343,24 +374,30 @@ export default function HomeScreen() {
         setSelectedImage(result.assets[0].uri);
       }
 
-      const response = await axios.post(
-        `${API_BASE}/analyze-product`,
-        {
-          image: imageToSend,
+      // 2. USE FETCH INSTEAD OF AXIOS
+      const response = await fetch(`${API_BASE}/analyze-product`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
         },
-        {
-          timeout: 20000,
-          headers: { "Content-Type": "application/json" },
-        }
-      );
+        body: JSON.stringify({
+          image: imageToSend,
+        }),
+      });
 
-      setResult(response.data);
+      const data = await response.json();
+      
+      if (!response.ok) {
+        throw new Error(data.error || 'Product analysis failed');
+      }
+      
+      setResult(data);
+      
     } catch (error: any) {
       console.error("Product analysis error:", error);
       setResult({
-        error:
-          error.response?.data?.error ||
-          "Product analysis failed. Ensure backend is running.",
+        error: error.message || "Product analysis failed. Ensure backend is running.",
       });
     } finally {
       setLoading(false);
@@ -510,6 +547,7 @@ export default function HomeScreen() {
           >
             <Text style={styles.secondaryButtonText}>Scan Product</Text>
           </TouchableOpacity>
+         
         </View>
 
         {selectedImage && (

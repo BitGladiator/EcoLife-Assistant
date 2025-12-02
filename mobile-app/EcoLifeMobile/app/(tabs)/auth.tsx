@@ -8,8 +8,10 @@ import {
   Alert,
   KeyboardAvoidingView,
   Platform,
+  Button,
 } from 'react-native';
-import AuthService from '../../services/auth.service';
+import AuthService from '../../services/authService';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
 export default function AuthScreen() {
   const [isLogin, setIsLogin] = useState(true);
@@ -17,6 +19,12 @@ export default function AuthScreen() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
+
+  const checkToken = async () => {
+    const token = await AsyncStorage.getItem('token');
+    Alert.alert('Token Check', token ? `Token exists (${token.length} chars)` : 'No token');
+    console.log('Current token:', token);
+  };
 
   const handleAuth = async () => {
     if (!username || !password || (!isLogin && !email)) {
@@ -26,15 +34,21 @@ export default function AuthScreen() {
 
     setLoading(true);
     try {
+      let result;
       if (isLogin) {
-        await AuthService.login(username, password);
+        result = await AuthService.login(username, password);
         Alert.alert('Success', 'Logged in successfully!');
+        
+        // Check token after login
+        const token = await AuthService.getToken();
+        console.log('Token after login:', token);
       } else {
-        await AuthService.register(username, email, password);
+        result = await AuthService.register(username, email, password);
         Alert.alert('Success', 'Account created successfully!');
       }
     } catch (error: any) {
       Alert.alert('Error', error.error || 'Authentication failed');
+      console.error('Auth error:', error);
     } finally {
       setLoading(false);
     }
@@ -92,6 +106,10 @@ export default function AuthScreen() {
             {isLogin ? "Don't have an account? Register" : 'Already have an account? Login'}
           </Text>
         </TouchableOpacity>
+
+        <View style={{ marginTop: 20 }}>
+          <Button title="Debug: Check Token" onPress={checkToken} />
+        </View>
       </View>
     </KeyboardAvoidingView>
   );

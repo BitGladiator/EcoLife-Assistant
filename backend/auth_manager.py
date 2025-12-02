@@ -6,10 +6,21 @@ from flask import request, jsonify
 import sqlite3
 import os
 
+# Create a SINGLE instance of AuthManager
+_auth_manager = None
+
+def get_auth_manager():
+    """Get or create the single AuthManager instance"""
+    global _auth_manager
+    if _auth_manager is None:
+        _auth_manager = AuthManager()
+    return _auth_manager
+
 class AuthManager:
     def __init__(self, db_path='ecolife_users.db'):
         self.db_path = db_path
-        self.secret_key = os.environ.get('JWT_SECRET_KEY', 'your-secret-key-change-in-production')
+        # FIX: Use a consistent secret key
+        self.secret_key = 'your-secret-key-change-in-production'  # Always use same key
         self.init_database()
     
     def init_database(self):
@@ -82,9 +93,14 @@ class AuthManager:
         try:
             payload = jwt.decode(token, self.secret_key, algorithms=['HS256'])
             return payload
-        except jwt.ExpiredSignatureError:
+        except jwt.ExpiredSignatureError as e:
+            print(f"Token expired: {e}")
             return None
-        except jwt.InvalidTokenError:
+        except jwt.InvalidTokenError as e:
+            print(f"Invalid token: {e}")
+            return None
+        except Exception as e:
+            print(f"Token verification error: {e}")
             return None
     
     def register_user(self, username, email, password):
@@ -250,17 +266,33 @@ def token_required(f):
     def decorated(*args, **kwargs):
         token = request.headers.get('Authorization')
         
+        print("=" * 50)
+        print("DEBUG TOKEN VERIFICATION:")
+        print(f"Authorization header: {token}")
+        
         if not token:
+            print("ERROR: No Authorization header")
             return jsonify({'error': 'Token is missing'}), 401
         
         if token.startswith('Bearer '):
             token = token[7:]
+            print(f"Token after removing 'Bearer': {token[:50]}...")
+        else:
+            print(f"Token (no 'Bearer' prefix): {token[:50]}...")
         
-        auth_manager = AuthManager()
+       
+        auth_manager = get_auth_manager()
+        
+        print(f"Auth manager secret key: {auth_manager.secret_key}")
+        
         payload = auth_manager.verify_token(token)
         
         if not payload:
+            print("ERROR: Token verification failed")
             return jsonify({'error': 'Invalid or expired token'}), 401
+        
+        print(f"SUCCESS: Token verified for user_id: {payload['user_id']}, username: {payload['username']}")
+        print("=" * 50)
         
         request.user_id = payload['user_id']
         request.username = payload['username']
@@ -270,6 +302,7 @@ def token_required(f):
     return decorated
 
 if __name__ == "__main__":
-    auth = AuthManager()
+    auth = get_auth_manager()
     print("Auth system initialized successfully!")
     print("Database created at:", auth.db_path)
+    print("Secret key:", auth.secret_key)
