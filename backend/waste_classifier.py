@@ -8,6 +8,14 @@ class WasteClassifier:
         self.model = None
         self.class_names = ['recyclable', 'organic', 'landfill']
         
+    def get_disposal_instructions(self, waste_type):
+        instructions = {
+            'recyclable': 'Rinse if needed and place in recycling bin',
+            'organic': 'Compost in green bin or backyard compost',
+            'landfill': 'Place in general waste bin'
+        }
+        return instructions.get(waste_type, 'Check local disposal guidelines')
+    
     def create_model(self):
         """Create a simple CNN model for waste classification"""
         model = keras.Sequential([
@@ -47,18 +55,35 @@ class WasteClassifier:
     
     def predict(self, image):
         """Predict waste type from image"""
-        if self.model is None:
-            self.create_model()
+        try:
+            if self.model is None:
+                self.create_model()
             
-        image = cv2.resize(image, (224, 224))
-        image = image / 255.0 
-        image = np.expand_dims(image, axis=0)
-        
-        predictions = self.model.predict(image)
-        class_idx = np.argmax(predictions[0])
-        confidence = predictions[0][class_idx]
-        
-        return self.class_names[class_idx], float(confidence)
+            image = cv2.resize(image, (224, 224))
+            image = image / 255.0 
+            image = np.expand_dims(image, axis=0)
+            
+            predictions = self.model.predict(image)
+            class_idx = np.argmax(predictions[0])
+            confidence = predictions[0][class_idx]
+            
+            waste_type = self.class_names[class_idx]
+            confidence_value = float(confidence)
+            
+            # FIXED: Return a dictionary instead of a tuple
+            return {
+                'waste_type': waste_type,
+                'confidence': confidence_value,
+                'disposal_instructions': self.get_disposal_instructions(waste_type)
+            }
+            
+        except Exception as e:
+            return {
+                'error': str(e),
+                'waste_type': 'unclassified',
+                'confidence': 0.0,
+                'disposal_instructions': 'Prediction error occurred'
+            }
 
 if __name__ == "__main__":
     classifier = WasteClassifier()

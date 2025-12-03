@@ -1,4 +1,5 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
+import { router } from "expo-router";
 import {
   StyleSheet,
   Text,
@@ -9,10 +10,23 @@ import {
   Modal,
   Image,
   StatusBar,
+  SafeAreaView,
+  Dimensions,
+  Platform,
+  useWindowDimensions,
 } from "react-native";
 import * as ImagePicker from "expo-image-picker";
-import AsyncStorage from "@react-native-async-storage/async-storage"; 
-import Svg, { Path, Circle, Rect, Line } from "react-native-svg";
+import AsyncStorage from "@react-native-async-storage/async-storage";
+import Svg, {
+  Path,
+  Circle,
+  Rect,
+  Line,
+  G,
+  Defs,
+  LinearGradient,
+  Stop,
+} from "react-native-svg";
 
 const API_BASE = "http://10.219.49.127:5500";
 
@@ -45,6 +59,7 @@ interface SimpleWasteResult {
   tips: string[];
   mode: "simple";
 }
+
 interface ProductResult {
   sustainability_score: number;
   confidence: number;
@@ -68,69 +83,97 @@ interface ProductResult {
   };
 }
 
-interface ProductResult {
-  sustainability_score: number;
-  found_keywords: string[];
-  extracted_text: string;
-}
-
 type ApiResult =
   | AdvancedWasteResult
   | SimpleWasteResult
   | ProductResult
   | { error: string };
 
-const MenuIcon = () => (
-  <Svg width="24" height="24" viewBox="0 0 24 24" fill="none">
+const LogoIcon = () => (
+  <Svg width={32} height={32} viewBox="0 0 40 40">
+    <Defs>
+      <LinearGradient id="logoGradient" x1="0" y1="0" x2="1" y2="1">
+        <Stop offset="0" stopColor="#0F766E" stopOpacity="1" />
+        <Stop offset="0.5" stopColor="#10B981" stopOpacity="1" />
+        <Stop offset="1" stopColor="#134E4A" stopOpacity="1" />
+      </LinearGradient>
+    </Defs>
+    <Circle cx="20" cy="20" r="17" fill="url(#logoGradient)" />
     <Path
-      d="M3 12H21M3 6H21M3 18H21"
-      stroke="#065F46"
-      strokeWidth="2"
-      strokeLinecap="round"
-      strokeLinejoin="round"
+      d="M20 12C20 12 14 16 14 21C14 25.418 17.582 29 22 29C26.418 29 30 25.418 30 21C30 16 20 12 20 12Z"
+      fill="#FFFFFF"
+      opacity="0.9"
     />
+    <Circle cx="20" cy="20" r="5" fill="#FFFFFF" opacity="0.95" />
   </Svg>
 );
 
 const CameraIcon = () => (
-  <Svg width="24" height="24" viewBox="0 0 24 24" fill="none">
-    <Path
-      d="M23 19C23 19.5304 22.7893 20.0391 22.4142 20.4142C22.0391 20.7893 21.5304 21 21 21H3C2.46957 21 1.96086 20.7893 1.58579 20.4142C1.21071 20.0391 1 19.5304 1 19V8C1 7.46957 1.21071 6.96086 1.58579 6.58579C1.96086 6.21071 2.46957 6 3 6H7L9 3H15L17 6H21C21.5304 6 22.0391 6.21071 22.4142 6.58579C22.7893 6.96086 23 7.46957 23 8V19Z"
-      stroke="#FFFFFF"
-      strokeWidth="2"
-      strokeLinecap="round"
-      strokeLinejoin="round"
+  <Svg width={24} height={24} viewBox="0 0 24 24" fill="none">
+    <Defs>
+      <LinearGradient id="cameraGradient" x1="0" y1="0" x2="1" y2="1">
+        <Stop offset="0" stopColor="#0F766E" stopOpacity="1" />
+        <Stop offset="1" stopColor="#10B981" stopOpacity="1" />
+      </LinearGradient>
+    </Defs>
+    <Rect
+      x="3"
+      y="6"
+      width="18"
+      height="14"
+      rx="3"
+      stroke="url(#cameraGradient)"
+      strokeWidth="1.8"
     />
-    <Circle cx="12" cy="13" r="4" stroke="#FFFFFF" strokeWidth="2" />
+    <Circle
+      cx="12"
+      cy="13"
+      r="3.5"
+      stroke="url(#cameraGradient)"
+      strokeWidth="1.8"
+    />
+    <Circle cx="17" cy="10" r="1" fill="url(#cameraGradient)" />
   </Svg>
 );
 
 const GalleryIcon = () => (
-  <Svg width="24" height="24" viewBox="0 0 24 24" fill="none">
-    <Path
-      d="M4 16L8.586 11.414C8.96106 11.0391 9.46967 10.8284 10 10.8284C10.5303 10.8284 11.0389 11.0391 11.414 11.414L16 16"
-      stroke="#FFFFFF"
-      strokeWidth="2"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-    />
+  <Svg width={24} height={24} viewBox="0 0 24 24" fill="none">
+    <Defs>
+      <LinearGradient id="galleryGradient" x1="0" y1="0" x2="1" y2="1">
+        <Stop offset="0" stopColor="#0F766E" stopOpacity="1" />
+        <Stop offset="1" stopColor="#10B981" stopOpacity="1" />
+      </LinearGradient>
+    </Defs>
     <Rect
-      x="3"
-      y="3"
-      width="18"
-      height="18"
+      x="4"
+      y="4"
+      width="16"
+      height="16"
       rx="2"
-      stroke="#FFFFFF"
-      strokeWidth="2"
+      stroke="url(#galleryGradient)"
+      strokeWidth="1.8"
+    />
+    <Circle cx="9" cy="10" r="2" fill="url(#galleryGradient)" />
+    <Path
+      d="M15 15L19 19"
+      stroke="url(#galleryGradient)"
+      strokeWidth="1.8"
+      strokeLinecap="round"
     />
   </Svg>
 );
 
 const RecycleIcon = () => (
-  <Svg width="32" height="32" viewBox="0 0 24 24" fill="none">
+  <Svg width={32} height={32} viewBox="0 0 32 32" fill="none">
+    <Defs>
+      <LinearGradient id="recycleGradient" x1="0" y1="0" x2="1" y2="1">
+        <Stop offset="0" stopColor="#10B981" stopOpacity="1" />
+        <Stop offset="1" stopColor="#059669" stopOpacity="1" />
+      </LinearGradient>
+    </Defs>
     <Path
-      d="M16 2L20 6L16 10M8 22L4 18L8 14M20 6H10C8.93913 6 7.92172 6.42143 7.17157 7.17157C6.42143 7.92172 6 8.93913 6 10V18M4 18H14C15.0609 18 16.0783 17.5786 16.8284 16.8284C17.5786 16.0783 18 15.0609 18 14V6"
-      stroke="#059669"
+      d="M11 8L16 13L11 18M21 26L16 21L21 16M27 11H16C14.343 11 12.686 11.686 11.757 12.757C10.828 13.686 10 15.343 10 17V21M16 21H27C28.657 21 30.314 20.314 31.243 19.243C32.172 18.314 33 16.657 33 15V11"
+      stroke="url(#recycleGradient)"
       strokeWidth="2"
       strokeLinecap="round"
       strokeLinejoin="round"
@@ -139,91 +182,150 @@ const RecycleIcon = () => (
 );
 
 const WarningIcon = () => (
-  <Svg width="20" height="20" viewBox="0 0 24 24" fill="none">
+  <Svg width={20} height={20} viewBox="0 0 20 20" fill="none">
+    <Defs>
+      <LinearGradient id="warningGradient" x1="0" y1="0" x2="1" y2="1">
+        <Stop offset="0" stopColor="#F59E0B" stopOpacity="1" />
+        <Stop offset="1" stopColor="#D97706" stopOpacity="1" />
+      </LinearGradient>
+    </Defs>
     <Path
-      d="M10.29 3.86L1.82 18C1.64537 18.3024 1.55296 18.6453 1.55199 18.9945C1.55101 19.3437 1.64149 19.6871 1.81442 19.9905C1.98735 20.2939 2.23673 20.5467 2.53771 20.7239C2.8387 20.901 3.18067 20.9962 3.53 21H20.47C20.8193 20.9962 21.1613 20.901 21.4623 20.7239C21.7633 20.5467 22.0127 20.2939 22.1856 19.9905C22.3585 19.6871 22.449 19.3437 22.448 18.9945C22.447 18.6453 22.3546 18.3024 22.18 18L13.71 3.86C13.5317 3.56611 13.2807 3.32312 12.9812 3.15448C12.6817 2.98585 12.3437 2.89725 12 2.89725C11.6563 2.89725 11.3183 2.98585 11.0188 3.15448C10.7193 3.32312 10.4683 3.56611 10.29 3.86Z"
-      stroke="#D97706"
-      strokeWidth="2"
-      strokeLinecap="round"
-      strokeLinejoin="round"
+      d="M10 2L18 16H2L10 2Z"
+      fill="url(#warningGradient)"
+      stroke="url(#warningGradient)"
+      strokeWidth="1.2"
     />
+    <Circle cx="10" cy="14" r="1" fill="#FFFFFF" />
     <Line
-      x1="12"
-      y1="9"
-      x2="12"
-      y2="13"
-      stroke="#D97706"
-      strokeWidth="2"
-      strokeLinecap="round"
-    />
-    <Circle cx="12" cy="17" r="1" fill="#D97706" />
-  </Svg>
-);
-
-const StarIcon = ({ filled }: { filled: boolean }) => (
-  <Svg
-    width="16"
-    height="16"
-    viewBox="0 0 24 24"
-    fill={filled ? "#059669" : "none"}
-  >
-    <Path
-      d="M12 2L15.09 8.26L22 9.27L17 14.14L18.18 21.02L12 17.77L5.82 21.02L7 14.14L2 9.27L8.91 8.26L12 2Z"
-      stroke="#059669"
-      strokeWidth="2"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-    />
-  </Svg>
-);
-
-const LeafIcon = () => (
-  <Svg width="24" height="24" viewBox="0 0 24 24" fill="none">
-    <Path
-      d="M12 2C12 2 3 7 3 14C3 17.866 6.582 21 12 21C17.418 21 21 17.866 21 14C21 7 12 2 12 2Z"
+      x1="10"
+      y1="7"
+      x2="10"
+      y2="11"
       stroke="#FFFFFF"
-      strokeWidth="2"
-    />
-    <Path d="M12 2V21" stroke="#FFFFFF" strokeWidth="2" />
-    <Path
-      d="M12 13C15.866 13 19 10.866 19 7"
-      stroke="#FFFFFF"
-      strokeWidth="2"
+      strokeWidth="1.5"
+      strokeLinecap="round"
     />
   </Svg>
 );
 
 const AnalyzeIcon = () => (
-  <Svg width="24" height="24" viewBox="0 0 24 24" fill="none">
+  <Svg width={24} height={24} viewBox="0 0 24 24" fill="none">
+    <Defs>
+      <LinearGradient id="analyzeGradient" x1="0" y1="0" x2="1" y2="1">
+        <Stop offset="0" stopColor="#8B5CF6" stopOpacity="1" />
+        <Stop offset="1" stopColor="#7C3AED" stopOpacity="1" />
+      </LinearGradient>
+    </Defs>
+    <Circle
+      cx="12"
+      cy="12"
+      r="9"
+      stroke="url(#analyzeGradient)"
+      strokeWidth="1.8"
+    />
     <Path
-      d="M21 21L16.514 16.506M19 10.5C19 15.194 15.194 19 10.5 19C5.806 19 2 15.194 2 10.5C2 5.806 5.806 2 10.5 2C15.194 2 19 5.806 19 10.5Z"
-      stroke="#059669"
-      strokeWidth="2"
+      d="M12 8V12L15 15"
+      stroke="url(#analyzeGradient)"
+      strokeWidth="1.8"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    />
+    <Circle cx="12" cy="12" r="2" fill="url(#analyzeGradient)" />
+  </Svg>
+);
+
+const ProfileIcon = () => (
+  <Svg width={24} height={24} viewBox="0 0 24 24" fill="none">
+    <Defs>
+      <LinearGradient id="profileGradient" x1="0" y1="0" x2="1" y2="1">
+        <Stop offset="0" stopColor="#0F766E" stopOpacity="1" />
+        <Stop offset="1" stopColor="#10B981" stopOpacity="1" />
+      </LinearGradient>
+    </Defs>
+    <Circle
+      cx="12"
+      cy="12"
+      r="9"
+      stroke="url(#profileGradient)"
+      strokeWidth="1.8"
+    />
+    <Circle cx="12" cy="9" r="3" fill="url(#profileGradient)" />
+    <Path
+      d="M6 18C6 15.791 8.791 13 12 13C15.209 13 18 15.791 18 18"
+      stroke="url(#profileGradient)"
+      strokeWidth="1.8"
+      strokeLinecap="round"
+    />
+  </Svg>
+);
+
+const HistoryIcon = () => (
+  <Svg width={24} height={24} viewBox="0 0 24 24" fill="none">
+    <Defs>
+      <LinearGradient id="historyGradient" x1="0" y1="0" x2="1" y2="1">
+        <Stop offset="0" stopColor="#0F766E" stopOpacity="1" />
+        <Stop offset="1" stopColor="#10B981" stopOpacity="1" />
+      </LinearGradient>
+    </Defs>
+    <Circle
+      cx="12"
+      cy="12"
+      r="9"
+      stroke="url(#historyGradient)"
+      strokeWidth="1.8"
+    />
+    <Path
+      d="M12 8V12L14 14"
+      stroke="url(#historyGradient)"
+      strokeWidth="1.8"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    />
+    <Path
+      d="M16 16L20 20"
+      stroke="url(#historyGradient)"
+      strokeWidth="1.8"
+      strokeLinecap="round"
+    />
+  </Svg>
+);
+
+const SettingsIcon = () => (
+  <Svg width={24} height={24} viewBox="0 0 24 24" fill="none">
+    <Defs>
+      <LinearGradient id="settingsGradient" x1="0" y1="0" x2="1" y2="1">
+        <Stop offset="0" stopColor="#0F766E" stopOpacity="1" />
+        <Stop offset="1" stopColor="#10B981" stopOpacity="1" />
+      </LinearGradient>
+    </Defs>
+    <Circle
+      cx="12"
+      cy="12"
+      r="3"
+      stroke="url(#settingsGradient)"
+      strokeWidth="1.8"
+    />
+    <Path
+      d="M19.4 15C19.5325 14.3597 19.6 13.6844 19.6 13C19.6 12.3156 19.5325 11.6403 19.4 11M4.6 11C4.46745 11.6403 4.4 12.3156 4.4 13C4.4 13.6844 4.46745 14.3597 4.6 15M16.2 16.4C16.8727 16.9172 17.6154 17.3246 18.4 17.6M5.6 17.6C6.38458 17.3246 7.12728 16.9172 7.8 16.4M7.8 9.6C7.12728 9.08279 6.38458 8.67541 5.6 8.4M18.4 8.4C17.6154 8.67541 16.8727 9.08279 16.2 9.6"
+      stroke="url(#settingsGradient)"
+      strokeWidth="1.8"
       strokeLinecap="round"
       strokeLinejoin="round"
     />
   </Svg>
 );
 
-const CloseIcon = () => (
-  <Svg width="24" height="24" viewBox="0 0 24 24" fill="none">
-    <Path
-      d="M18 6L6 18M6 6L18 18"
-      stroke="#065F46"
-      strokeWidth="2"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-    />
-  </Svg>
-);
-
-export default function HomeScreen() {
+export default function HomeScreen({ navigation }: any) {
   const [result, setResult] = useState<ApiResult | null>(null);
   const [loading, setLoading] = useState(false);
   const [mode, setMode] = useState<"simple" | "advanced">("advanced");
   const [showModeModal, setShowModeModal] = useState(false);
   const [selectedImage, setSelectedImage] = useState<string | null>(null);
-  const [showSidebar, setShowSidebar] = useState(false);
+  const { width } = useWindowDimensions();
+
+  const isSmallScreen = width < 640;
+  const isMediumScreen = width >= 640 && width < 1024;
+  const isLargeScreen = width >= 1024;
 
   const takePicture = async () => {
     try {
@@ -232,14 +334,12 @@ export default function HomeScreen() {
         alert("Camera permission is required!");
         return;
       }
-
       const result = await ImagePicker.launchCameraAsync({
         allowsEditing: true,
         aspect: [4, 3],
         quality: 0.8,
         base64: true,
       });
-
       if (!result.canceled && result.assets[0]?.base64) {
         setSelectedImage(result.assets[0].uri);
         await classifyWaste(result.assets[0].base64);
@@ -257,7 +357,6 @@ export default function HomeScreen() {
         quality: 0.8,
         base64: true,
       });
-
       if (!result.canceled && result.assets[0]?.base64) {
         setSelectedImage(result.assets[0].uri);
         await classifyWaste(result.assets[0].base64);
@@ -266,7 +365,8 @@ export default function HomeScreen() {
       setResult({ error: "Image selection failed" });
     }
   };
-  const getScoreColor = (score: number | string): any => {
+
+  const getScoreColor = (score: number | string): string => {
     if (typeof score === "string") {
       const grade = score.toUpperCase();
       const colorMap: Record<string, string> = {
@@ -276,87 +376,70 @@ export default function HomeScreen() {
         D: "#F59E0B",
         E: "#DC2626",
       };
-      return { color: colorMap[grade] || "#6B7280" };
+      return colorMap[grade] || "#6B7280";
     }
-
     if (score >= 8) return "#059669";
     if (score >= 6) return "#84CC16";
     if (score >= 4) return "#EAB308";
     if (score >= 2) return "#F59E0B";
     return "#DC2626";
   };
+
   const classifyWaste = async (base64Image: string) => {
     setLoading(true);
     setResult(null);
-
     try {
-      // 1. GET TOKEN FROM STORAGE
-      const token = await AsyncStorage.getItem('token');
-      
+      const token = await AsyncStorage.getItem("token");
       if (!token) {
         setResult({
-          error: "Please login first. No authentication token found."
+          error: "Please login first. No authentication token found.",
         });
         setLoading(false);
         return;
       }
-
-      console.log("🔑 Token being sent:", token.substring(0, 30) + "...");
-
       const endpoint =
         mode === "advanced"
           ? "/classify-waste/advanced"
           : "/classify-waste/simple";
-
-      // 2. USE FETCH INSTEAD OF AXIOS
       const response = await fetch(`${API_BASE}${endpoint}`, {
-        method: 'POST',
+        method: "POST",
         headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
         },
         body: JSON.stringify({
           image: base64Image,
         }),
       });
-
       const data = await response.json();
-      
       if (!response.ok) {
-        throw new Error(data.error || 'Classification failed');
+        throw new Error(data.error || "Classification failed");
       }
-      
       setResult(data);
-      
     } catch (error: any) {
       console.error("Classification error:", error);
       setResult({
-        error: error.message || "Connection failed. Check if backend is running.",
+        error:
+          error.message || "Connection failed. Check if backend is running.",
       });
     } finally {
       setLoading(false);
     }
   };
 
-
   const analyzeProduct = async (base64Image?: string) => {
     setLoading(true);
     setResult(null);
-
     try {
-      // 1. GET TOKEN FROM STORAGE
-      const token = await AsyncStorage.getItem('token');
-      
+      const token = await AsyncStorage.getItem("token");
       if (!token) {
         setResult({
-          error: "Please login first. No authentication token found."
+          error: "Please login first. No authentication token found.",
         });
         setLoading(false);
         return;
       }
-
       let imageToSend = base64Image;
-
       if (!imageToSend) {
         const result = await ImagePicker.launchCameraAsync({
           allowsEditing: true,
@@ -364,40 +447,34 @@ export default function HomeScreen() {
           quality: 0.8,
           base64: true,
         });
-
         if (result.canceled || !result.assets[0]?.base64) {
           setLoading(false);
           return;
         }
-
         imageToSend = result.assets[0].base64;
         setSelectedImage(result.assets[0].uri);
       }
-
-      // 2. USE FETCH INSTEAD OF AXIOS
       const response = await fetch(`${API_BASE}/analyze-product`, {
-        method: 'POST',
+        method: "POST",
         headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
         },
         body: JSON.stringify({
           image: imageToSend,
         }),
       });
-
       const data = await response.json();
-      
       if (!response.ok) {
-        throw new Error(data.error || 'Product analysis failed');
+        throw new Error(data.error || "Product analysis failed");
       }
-      
       setResult(data);
-      
     } catch (error: any) {
       console.error("Product analysis error:", error);
       setResult({
-        error: error.message || "Product analysis failed. Ensure backend is running.",
+        error:
+          error.message ||
+          "Product analysis failed. Ensure backend is running.",
       });
     } finally {
       setLoading(false);
@@ -429,156 +506,315 @@ export default function HomeScreen() {
   };
 
   return (
-    <View style={styles.container}>
-      <StatusBar backgroundColor="#065F46" barStyle="light-content" />
-
-      <View style={styles.topBar}>
-        <TouchableOpacity
-          style={styles.menuButton}
-          onPress={() => setShowSidebar(true)}
+    <SafeAreaView style={styles.container}>
+      <StatusBar backgroundColor="#0F766E" barStyle="light-content" />
+      <View style={[styles.header, isSmallScreen && styles.headerSmall]}>
+        <View
+          style={[
+            styles.headerContent,
+            isLargeScreen && styles.headerContentLarge,
+          ]}
         >
-          <MenuIcon />
-        </TouchableOpacity>
-
-        <View style={styles.titleContainer}>
-          <LeafIcon />
-          <Text style={styles.topBarTitle}>EcoLife</Text>
-        </View>
-
-        <View style={styles.placeholder} />
-      </View>
-
-      <Modal
-        visible={showSidebar}
-        transparent={true}
-        animationType="slide"
-        onRequestClose={() => setShowSidebar(false)}
-      >
-        <View style={styles.sidebarOverlay}>
-          <View style={styles.sidebarContent}>
-            <View style={styles.sidebarHeader}>
-              <Text style={styles.sidebarTitle}>Menu</Text>
-              <TouchableOpacity onPress={() => setShowSidebar(false)}>
-                <CloseIcon />
+          <View style={styles.logoContainer}>
+            <LogoIcon />
+            <View style={styles.titleContainer}>
+              <Text
+                style={[styles.appName, isSmallScreen && styles.appNameSmall]}
+              >
+                EcoVision
+              </Text>
+              <Text
+                style={[
+                  styles.appTagline,
+                  isSmallScreen && styles.appTaglineSmall,
+                ]}
+              >
+                Waste Intelligence
+              </Text>
+            </View>
+          </View>
+          {!isSmallScreen && (
+            <View style={styles.navDesktop}>
+              <TouchableOpacity
+                style={styles.navItem}
+                onPress={() => router.push("/profile")}
+              >
+                <ProfileIcon />
+                <Text style={styles.navText}>Profile</Text>
+              </TouchableOpacity>
+              {/* <TouchableOpacity style={styles.navItem}>
+                <HistoryIcon />
+                <Text style={styles.navText}>History</Text>
+              </TouchableOpacity>
+              <TouchableOpacity style={styles.navItem}>
+                <SettingsIcon />
+                <Text style={styles.navText}>Settings</Text>
+              </TouchableOpacity> */}
+            </View>
+          )}
+          {isSmallScreen && (
+            <View style={styles.navMobile}>
+              <TouchableOpacity
+                style={styles.navItem}
+                onPress={() => router.push("/profile")}
+              >
+                <ProfileIcon />
+                {/* <Text style={styles.navText}>Profile</Text> */}
               </TouchableOpacity>
             </View>
-
-            <TouchableOpacity style={styles.sidebarItem}>
-              <Text style={styles.sidebarItemText}>Waste Classification</Text>
-            </TouchableOpacity>
-
-            <TouchableOpacity
-              style={styles.secondaryButton}
-              onPress={() => analyzeProduct()}
-            >
-              <Text style={styles.secondaryButtonText}>Scan Product</Text>
-            </TouchableOpacity>
-
-            <TouchableOpacity style={styles.sidebarItem}>
-              <Text style={styles.sidebarItemText}>History</Text>
-            </TouchableOpacity>
-
-            <TouchableOpacity style={styles.sidebarItem}>
-              <Text style={styles.sidebarItemText}>Settings</Text>
-            </TouchableOpacity>
-
-            <TouchableOpacity style={styles.sidebarItem}>
-              <Text style={styles.sidebarItemText}>About</Text>
-            </TouchableOpacity>
-          </View>
+          )}
         </View>
-      </Modal>
-
+      </View>
       <ScrollView
         style={styles.scrollView}
         showsVerticalScrollIndicator={false}
+        contentContainerStyle={[
+          styles.scrollContent,
+          isSmallScreen && styles.scrollContentSmall,
+          isMediumScreen && styles.scrollContentMedium,
+          isLargeScreen && styles.scrollContentLarge,
+        ]}
       >
-        <View style={styles.header}>
-          <Text style={styles.subtitle}>Advanced Waste Intelligence</Text>
-
-          <TouchableOpacity
-            style={styles.modeButton}
-            onPress={() => setShowModeModal(true)}
+        <View
+          style={[styles.heroSection, isSmallScreen && styles.heroSectionSmall]}
+        >
+          <Text
+            style={[styles.heroTitle, isSmallScreen && styles.heroTitleSmall]}
           >
-            <Text style={styles.modeButtonText}>
-              {mode === "advanced"
-                ? "Advanced Analysis"
-                : "Simple Classification"}
-            </Text>
-          </TouchableOpacity>
-        </View>
-
-        <View style={styles.card}>
-          <View style={styles.cardHeader}>
-            <RecycleIcon />
-            <Text style={styles.cardTitle}>Waste Classification</Text>
-          </View>
-          <Text style={styles.cardDescription}>
-            {mode === "advanced"
-              ? "Get detailed analysis with 9 waste categories, disposal instructions, and environmental guidance"
-              : "Quick classification into recyclable, organic, or landfill categories"}
+            Intelligent Waste Analysis
           </Text>
-          <View style={styles.buttonRow}>
-            <TouchableOpacity
-              style={styles.primaryButton}
-              onPress={takePicture}
-            >
+          <Text
+            style={[
+              styles.heroSubtitle,
+              isSmallScreen && styles.heroSubtitleSmall,
+            ]}
+          >
+            Advanced AI-powered classification and sustainability insights
+          </Text>
+        </View>
+        <TouchableOpacity
+          style={[
+            styles.modeSelector,
+            isSmallScreen && styles.modeSelectorSmall,
+          ]}
+          onPress={() => setShowModeModal(true)}
+          activeOpacity={0.8}
+        >
+          <View style={styles.modeSelectorHeader}>
+            <View style={styles.modeIcon}>
+              {mode === "advanced" ? <RecycleIcon /> : <AnalyzeIcon />}
+            </View>
+            <View style={styles.modeInfo}>
+              <Text
+                style={[
+                  styles.modeTitle,
+                  isSmallScreen && styles.modeTitleSmall,
+                ]}
+              >
+                {mode === "advanced" ? "Advanced Analysis" : "Simple Mode"}
+              </Text>
+              <Text
+                style={[
+                  styles.modeDescription,
+                  isSmallScreen && styles.modeDescriptionSmall,
+                ]}
+              >
+                {mode === "advanced"
+                  ? "Detailed classification with 9 waste categories"
+                  : "Quick three-category classification"}
+              </Text>
+            </View>
+          </View>
+          <Text
+            style={[
+              styles.modeChangeText,
+              isSmallScreen && styles.modeChangeTextSmall,
+            ]}
+          >
+            Tap to change mode
+          </Text>
+        </TouchableOpacity>
+        <View
+          style={[
+            styles.featuresGrid,
+            isSmallScreen && styles.featuresGridSmall,
+            isMediumScreen && styles.featuresGridMedium,
+          ]}
+        >
+          <View
+            style={[
+              styles.featureCard,
+              isSmallScreen && styles.featureCardSmall,
+              isLargeScreen && styles.featureCardLarge,
+            ]}
+          >
+            <View style={styles.featureIconContainer}>
               <CameraIcon />
-              <Text style={styles.buttonText}>Camera</Text>
-            </TouchableOpacity>
-            <TouchableOpacity style={styles.primaryButton} onPress={pickImage}>
-              <GalleryIcon />
-              <Text style={styles.buttonText}>Gallery</Text>
-            </TouchableOpacity>
+            </View>
+            <Text
+              style={[
+                styles.featureTitle,
+                isSmallScreen && styles.featureTitleSmall,
+              ]}
+            >
+              Waste Classification
+            </Text>
+            <Text
+              style={[
+                styles.featureDescription,
+                isSmallScreen && styles.featureDescriptionSmall,
+              ]}
+            >
+              Identify and categorize waste with precision
+            </Text>
+            <View
+              style={[
+                styles.featureActions,
+                isSmallScreen && styles.featureActionsSmall,
+              ]}
+            >
+              <TouchableOpacity
+                style={[
+                  styles.featureButton,
+                  isSmallScreen && styles.featureButtonSmall,
+                ]}
+                onPress={takePicture}
+              >
+                <CameraIcon />
+                <Text style={styles.featureButtonText}>Camera</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={[
+                  styles.featureButton,
+                  isSmallScreen && styles.featureButtonSmall,
+                ]}
+                onPress={pickImage}
+              >
+                <GalleryIcon />
+                <Text style={styles.featureButtonText}>Gallery</Text>
+              </TouchableOpacity>
+            </View>
           </View>
-        </View>
-
-        <View style={styles.card}>
-          <View style={styles.cardHeader}>
-            <AnalyzeIcon />
-            <Text style={styles.cardTitle}>Product Analysis</Text>
-          </View>
-          <Text style={styles.cardDescription}>
-            Analyze product sustainability and environmental impact metrics
-          </Text>
-          <TouchableOpacity
-            style={styles.secondaryButton}
-            onPress={() => analyzeProduct()}
+          <View
+            style={[
+              styles.featureCard,
+              isSmallScreen && styles.featureCardSmall,
+              isLargeScreen && styles.featureCardLarge,
+            ]}
           >
-            <Text style={styles.secondaryButtonText}>Scan Product</Text>
-          </TouchableOpacity>
-         
+            <View style={styles.featureIconContainer}>
+              <AnalyzeIcon />
+            </View>
+            <Text
+              style={[
+                styles.featureTitle,
+                isSmallScreen && styles.featureTitleSmall,
+              ]}
+            >
+              Product Analysis
+            </Text>
+            <Text
+              style={[
+                styles.featureDescription,
+                isSmallScreen && styles.featureDescriptionSmall,
+              ]}
+            >
+              Assess product sustainability and environmental impact
+            </Text>
+            <TouchableOpacity
+              style={[
+                styles.productAnalysisButton,
+                isSmallScreen && styles.productAnalysisButtonSmall,
+              ]}
+              onPress={() => analyzeProduct()}
+            >
+              <AnalyzeIcon />
+              <Text style={styles.productAnalysisButtonText}>Scan Product</Text>
+            </TouchableOpacity>
+          </View>
         </View>
-
         {selectedImage && (
-          <View style={styles.imagePreview}>
-            <Text style={styles.previewTitle}>Selected Image</Text>
+          <View
+            style={[
+              styles.imagePreviewCard,
+              isSmallScreen && styles.imagePreviewCardSmall,
+            ]}
+          >
+            <Text
+              style={[
+                styles.previewTitle,
+                isSmallScreen && styles.previewTitleSmall,
+              ]}
+            >
+              Selected Image
+            </Text>
             <Image
               source={{ uri: selectedImage }}
-              style={styles.previewImage}
+              style={[
+                styles.previewImage,
+                isSmallScreen && styles.previewImageSmall,
+              ]}
+              resizeMode="cover"
             />
           </View>
         )}
-
         {loading && (
-          <View style={styles.loadingCard}>
-            <ActivityIndicator size="large" color="#059669" />
-            <Text style={styles.loadingText}>
+          <View
+            style={[
+              styles.loadingCard,
+              isSmallScreen && styles.loadingCardSmall,
+            ]}
+          >
+            <ActivityIndicator size="large" color="#0F766E" />
+            <Text
+              style={[
+                styles.loadingText,
+                isSmallScreen && styles.loadingTextSmall,
+              ]}
+            >
               {mode === "advanced"
                 ? "Running advanced analysis..."
                 : "Processing image..."}
             </Text>
+            <Text
+              style={[
+                styles.loadingSubtext,
+                isSmallScreen && styles.loadingSubtextSmall,
+              ]}
+            >
+              This may take a moment
+            </Text>
           </View>
         )}
-
         {result && !loading && (
-          <View style={styles.resultCard}>
+          <View
+            style={[styles.resultCard, isSmallScreen && styles.resultCardSmall]}
+          >
             {"error" in result ? (
               <View style={styles.errorContainer}>
-                <Text style={styles.errorTitle}>Analysis Error</Text>
-                <Text style={styles.errorDetail}>{result.error}</Text>
-                <Text style={styles.errorHint}>
-                  Ensure your backend server is running on {API_BASE}
+                <Text
+                  style={[
+                    styles.errorTitle,
+                    isSmallScreen && styles.errorTitleSmall,
+                  ]}
+                >
+                  Analysis Error
+                </Text>
+                <Text
+                  style={[
+                    styles.errorDetail,
+                    isSmallScreen && styles.errorDetailSmall,
+                  ]}
+                >
+                  {result.error}
+                </Text>
+                <Text
+                  style={[
+                    styles.errorHint,
+                    isSmallScreen && styles.errorHintSmall,
+                  ]}
+                >
+                  Ensure your backend server is running
                 </Text>
               </View>
             ) : (
@@ -588,12 +824,18 @@ export default function HomeScreen() {
                     <View style={styles.resultHeader}>
                       <RecycleIcon />
                       <View style={styles.resultHeaderText}>
-                        <Text style={styles.resultTitle}>
+                        <Text
+                          style={[
+                            styles.resultTitle,
+                            isSmallScreen && styles.resultTitleSmall,
+                          ]}
+                        >
                           {result.category_name}
                         </Text>
                         <Text
                           style={[
                             styles.resultType,
+                            isSmallScreen && styles.resultTypeSmall,
                             { color: getWasteColor(result.waste_type) },
                           ]}
                         >
@@ -601,52 +843,96 @@ export default function HomeScreen() {
                         </Text>
                       </View>
                     </View>
-
                     <View style={styles.confidenceBar}>
-                      <Text style={styles.confidenceLabel}>
+                      <Text
+                        style={[
+                          styles.confidenceLabel,
+                          isSmallScreen && styles.confidenceLabelSmall,
+                        ]}
+                      >
                         Confidence Level
                       </Text>
-                      <View style={styles.progressBar}>
-                        <View
+                      <View style={styles.progressContainer}>
+                        <View style={styles.progressBar}>
+                          <View
+                            style={[
+                              styles.progressFill,
+                              {
+                                width: `${result.confidence * 100}%`,
+                                backgroundColor: getWasteColor(
+                                  result.waste_type
+                                ),
+                              },
+                            ]}
+                          />
+                        </View>
+                        <Text
                           style={[
-                            styles.progressFill,
-                            {
-                              width: `${result.confidence * 100}%`,
-                              backgroundColor: getWasteColor(result.waste_type),
-                            },
+                            styles.confidenceValue,
+                            isSmallScreen && styles.confidenceValueSmall,
                           ]}
-                        />
+                        >
+                          {Math.round(result.confidence * 100)}%
+                        </Text>
                       </View>
-                      <Text style={styles.confidenceValue}>
-                        {Math.round(result.confidence * 100)}%
-                      </Text>
                     </View>
-
                     <View style={styles.section}>
-                      <Text style={styles.sectionTitle}>Recycling Code</Text>
+                      <Text
+                        style={[
+                          styles.sectionTitle,
+                          isSmallScreen && styles.sectionTitleSmall,
+                        ]}
+                      >
+                        Recycling Code
+                      </Text>
                       <View style={styles.badge}>
-                        <Text style={styles.badgeText}>
+                        <Text
+                          style={[
+                            styles.badgeText,
+                            isSmallScreen && styles.badgeTextSmall,
+                          ]}
+                        >
                           {result.recycling_code}
                         </Text>
                       </View>
                     </View>
-
                     <View style={styles.section}>
-                      <Text style={styles.sectionTitle}>
+                      <Text
+                        style={[
+                          styles.sectionTitle,
+                          isSmallScreen && styles.sectionTitleSmall,
+                        ]}
+                      >
                         Disposal Instructions
                       </Text>
-                      <Text style={styles.sectionContent}>
+                      <Text
+                        style={[
+                          styles.sectionContent,
+                          isSmallScreen && styles.sectionContentSmall,
+                        ]}
+                      >
                         {result.disposal_instructions}
                       </Text>
                     </View>
-
                     {result.subcategories.length > 0 && (
                       <View style={styles.section}>
-                        <Text style={styles.sectionTitle}>Subcategories</Text>
+                        <Text
+                          style={[
+                            styles.sectionTitle,
+                            isSmallScreen && styles.sectionTitleSmall,
+                          ]}
+                        >
+                          Subcategories
+                        </Text>
                         <View style={styles.chipContainer}>
                           {result.subcategories.map((sub, idx) => (
                             <View key={idx} style={styles.chip}>
-                              <Text style={styles.chipText}>
+                              <Text
+                                style={[
+                                  styles.chipText,
+                                  isSmallScreen && styles.chipTextSmall,
+                                ]}
+                              >
                                 {formatWasteType(sub)}
                               </Text>
                             </View>
@@ -654,30 +940,50 @@ export default function HomeScreen() {
                         </View>
                       </View>
                     )}
-
                     {result.contamination_warnings.length > 0 && (
                       <View style={[styles.section, styles.warningSection]}>
                         <View style={styles.warningSectionHeader}>
                           <WarningIcon />
-                          <Text style={styles.sectionTitle}>
+                          <Text
+                            style={[
+                              styles.sectionTitle,
+                              isSmallScreen && styles.sectionTitleSmall,
+                            ]}
+                          >
                             Contamination Warnings
                           </Text>
                         </View>
                         {result.contamination_warnings.map((warning, idx) => (
-                          <Text key={idx} style={styles.warningText}>
-                            • {formatWasteType(warning)}
+                          <Text
+                            key={idx}
+                            style={[
+                              styles.warningText,
+                              isSmallScreen && styles.warningTextSmall,
+                            ]}
+                          >
+                            • {warning}
                           </Text>
                         ))}
                       </View>
                     )}
-
-                    {result.tips.length > 0 && (
+                    {result.tips?.length > 0 && (
                       <View style={styles.section}>
-                        <Text style={styles.sectionTitle}>
+                        <Text
+                          style={[
+                            styles.sectionTitle,
+                            isSmallScreen && styles.sectionTitleSmall,
+                          ]}
+                        >
                           Environmental Tips
                         </Text>
                         {result.tips.slice(0, 3).map((tip, idx) => (
-                          <Text key={idx} style={styles.tipText}>
+                          <Text
+                            key={idx}
+                            style={[
+                              styles.tipText,
+                              isSmallScreen && styles.tipTextSmall,
+                            ]}
+                          >
                             • {tip}
                           </Text>
                         ))}
@@ -685,39 +991,61 @@ export default function HomeScreen() {
                     )}
                   </>
                 )}
-
                 {isSimpleResult(result) && (
                   <>
                     <View style={styles.resultHeader}>
-                      <Text style={styles.resultTitle}>
+                      <Text
+                        style={[
+                          styles.resultTitle,
+                          isSmallScreen && styles.resultTitleSmall,
+                        ]}
+                      >
                         Classification Result
                       </Text>
                     </View>
-
                     <View
                       style={[
                         styles.simpleResult,
+                        isSmallScreen && styles.simpleResultSmall,
                         { borderColor: getWasteColor(result.waste_type) },
                       ]}
                     >
                       <Text
                         style={[
                           styles.simpleResultText,
+                          isSmallScreen && styles.simpleResultTextSmall,
                           { color: getWasteColor(result.waste_type) },
                         ]}
                       >
                         {formatWasteType(result.waste_type)}
                       </Text>
-                      <Text style={styles.confidenceText}>
+                      <Text
+                        style={[
+                          styles.confidenceText,
+                          isSmallScreen && styles.confidenceTextSmall,
+                        ]}
+                      >
                         {Math.round(result.confidence * 100)}% confidence
                       </Text>
                     </View>
-
-                    {result.tips.length > 0 && (
+                    {result.tips?.length > 0 && (
                       <View style={styles.section}>
-                        <Text style={styles.sectionTitle}>Guidance</Text>
+                        <Text
+                          style={[
+                            styles.sectionTitle,
+                            isSmallScreen && styles.sectionTitleSmall,
+                          ]}
+                        >
+                          Guidance
+                        </Text>
                         {result.tips.map((tip, idx) => (
-                          <Text key={idx} style={styles.tipText}>
+                          <Text
+                            key={idx}
+                            style={[
+                              styles.tipText,
+                              isSmallScreen && styles.tipTextSmall,
+                            ]}
+                          >
                             • {tip}
                           </Text>
                         ))}
@@ -725,71 +1053,114 @@ export default function HomeScreen() {
                     )}
                   </>
                 )}
-
                 {isProductResult(result) && (
                   <>
                     <View style={styles.resultHeader}>
                       <AnalyzeIcon />
                       <View style={styles.resultHeaderText}>
-                        <Text style={styles.resultTitle}>
+                        <Text
+                          style={[
+                            styles.resultTitle,
+                            isSmallScreen && styles.resultTitleSmall,
+                          ]}
+                        >
                           Product Sustainability Analysis
                         </Text>
-                        <Text style={styles.analysisMethod}>
+                        <Text
+                          style={[
+                            styles.analysisMethod,
+                            isSmallScreen && styles.analysisMethodSmall,
+                          ]}
+                        >
                           {result.barcode_detected
-                            ? "✓ Barcode Detected"
+                            ? "Barcode Detected"
                             : "OCR Analysis"}
                         </Text>
                       </View>
                     </View>
-
-        
                     {result.product_details && (
                       <View style={styles.productDetailsSection}>
-                        <Text style={styles.sectionTitle}>
+                        <Text
+                          style={[
+                            styles.sectionTitle,
+                            isSmallScreen && styles.sectionTitleSmall,
+                          ]}
+                        >
                           Product Information
                         </Text>
                         <View style={styles.productInfo}>
-                          <Text style={styles.productName}>
+                          <Text
+                            style={[
+                              styles.productName,
+                              isSmallScreen && styles.productNameSmall,
+                            ]}
+                          >
                             {result.product_details.name}
                           </Text>
-                          <Text style={styles.productBrand}>
+                          <Text
+                            style={[
+                              styles.productBrand,
+                              isSmallScreen && styles.productBrandSmall,
+                            ]}
+                          >
                             {result.product_details.brand}
                           </Text>
-
                           {result.product_details.categories && (
-                            <Text style={styles.productCategories}>
+                            <Text
+                              style={[
+                                styles.productCategories,
+                                isSmallScreen && styles.productCategoriesSmall,
+                              ]}
+                            >
                               {result.product_details.categories}
                             </Text>
                           )}
                         </View>
-
-                  
                         <View style={styles.scoresRow}>
                           {result.product_details.nutriscore !== "N/A" && (
                             <View style={styles.scoreChip}>
-                              <Text style={styles.scoreLabel}>Nutri-Score</Text>
+                              <Text
+                                style={[
+                                  styles.scoreLabel,
+                                  isSmallScreen && styles.scoreLabelSmall,
+                                ]}
+                              >
+                                Nutri-Score
+                              </Text>
                               <Text
                                 style={[
                                   styles.scoreGrade,
-                                  getScoreColor(
-                                    result.product_details.nutriscore
-                                  ),
+                                  isSmallScreen && styles.scoreGradeSmall,
+                                  {
+                                    color: getScoreColor(
+                                      result.product_details.nutriscore
+                                    ),
+                                  },
                                 ]}
                               >
                                 {result.product_details.nutriscore.toUpperCase()}
                               </Text>
                             </View>
                           )}
-
                           {result.product_details.ecoscore !== "N/A" && (
                             <View style={styles.scoreChip}>
-                              <Text style={styles.scoreLabel}>Eco-Score</Text>
+                              <Text
+                                style={[
+                                  styles.scoreLabel,
+                                  isSmallScreen && styles.scoreLabelSmall,
+                                ]}
+                              >
+                                Eco-Score
+                              </Text>
                               <Text
                                 style={[
                                   styles.scoreGrade,
-                                  getScoreColor(
-                                    result.product_details.ecoscore
-                                  ),
+                                  isSmallScreen && styles.scoreGradeSmall,
+                                  {
+                                    color: getScoreColor(
+                                      result.product_details.ecoscore
+                                    ),
+                                  },
                                 ]}
                               >
                                 {result.product_details.ecoscore.toUpperCase()}
@@ -799,121 +1170,182 @@ export default function HomeScreen() {
                         </View>
                       </View>
                     )}
-
-                
                     <View style={styles.scoreSection}>
-                      <Text style={styles.scoreLabel}>
+                      <Text
+                        style={[
+                          styles.scoreLabel,
+                          isSmallScreen && styles.scoreLabelSmall,
+                        ]}
+                      >
                         Environmental Impact Score
                       </Text>
                       <View style={styles.scoreDisplay}>
-                        <Text style={styles.scoreValue}>
+                        <Text
+                          style={[
+                            styles.scoreValue,
+                            isSmallScreen && styles.scoreValueSmall,
+                          ]}
+                        >
                           {result.sustainability_score.toFixed(1)}
                         </Text>
-                        <Text style={styles.scoreMax}>/10</Text>
-                      </View>
-
-                      <View style={styles.progressBar}>
-                        <View
+                        <Text
                           style={[
-                            styles.progressFill,
-                            {
-                              width: `${
-                                (result.sustainability_score / 10) * 100
-                              }%`,
-                              backgroundColor: getScoreColor(
-                                result.sustainability_score
-                              ),
-                            },
+                            styles.scoreMax,
+                            isSmallScreen && styles.scoreMaxSmall,
                           ]}
-                        />
+                        >
+                          /10
+                        </Text>
                       </View>
-
-                      <Text style={styles.confidenceText}>
+                      <View style={styles.progressContainer}>
+                        <View style={styles.progressBar}>
+                          <View
+                            style={[
+                              styles.progressFill,
+                              {
+                                width: `${
+                                  (result.sustainability_score / 10) * 100
+                                }%`,
+                                backgroundColor: getScoreColor(
+                                  result.sustainability_score
+                                ),
+                              },
+                            ]}
+                          />
+                        </View>
+                      </View>
+                      <Text
+                        style={[
+                          styles.confidenceText,
+                          isSmallScreen && styles.confidenceTextSmall,
+                        ]}
+                      >
                         {Math.round(result.confidence * 100)}% confidence
                       </Text>
                     </View>
-
-              
                     {result.packaging_analysis && (
                       <View style={styles.section}>
-                        <Text style={styles.sectionTitle}>
+                        <Text
+                          style={[
+                            styles.sectionTitle,
+                            isSmallScreen && styles.sectionTitleSmall,
+                          ]}
+                        >
                           Packaging Analysis
                         </Text>
                         <View style={styles.chipContainer}>
                           {result.packaging_analysis.materials.map(
                             (material, idx) => (
                               <View key={idx} style={styles.chip}>
-                                <Text style={styles.chipText}>{material}</Text>
+                                <Text
+                                  style={[
+                                    styles.chipText,
+                                    isSmallScreen && styles.chipTextSmall,
+                                  ]}
+                                >
+                                  {material}
+                                </Text>
                               </View>
                             )
                           )}
                         </View>
-                        <Text style={styles.packagingScore}>
+                        <Text
+                          style={[
+                            styles.packagingScore,
+                            isSmallScreen && styles.packagingScoreSmall,
+                          ]}
+                        >
                           Packaging Score:{" "}
                           {result.packaging_analysis.packaging_score.toFixed(1)}
                           /10
                         </Text>
                       </View>
                     )}
-
-          
                     {result.found_keywords.length > 0 && (
                       <View style={styles.section}>
-                        <Text style={styles.sectionTitle}>
+                        <Text
+                          style={[
+                            styles.sectionTitle,
+                            isSmallScreen && styles.sectionTitleSmall,
+                          ]}
+                        >
                           Sustainability Keywords
                         </Text>
                         <View style={styles.chipContainer}>
                           {result.found_keywords.map((kw, idx) => (
                             <View key={idx} style={styles.keywordChip}>
-                              <Text style={styles.chipText}>{kw}</Text>
+                              <Text
+                                style={[
+                                  styles.chipText,
+                                  isSmallScreen && styles.chipTextSmall,
+                                ]}
+                              >
+                                {kw}
+                              </Text>
                             </View>
                           ))}
                         </View>
                       </View>
                     )}
-
                     {result.recommendations.length > 0 && (
                       <View style={styles.section}>
-                        <Text style={styles.sectionTitle}>Recommendations</Text>
+                        <Text
+                          style={[
+                            styles.sectionTitle,
+                            isSmallScreen && styles.sectionTitleSmall,
+                          ]}
+                        >
+                          Recommendations
+                        </Text>
                         {result.recommendations.map((rec, idx) => (
                           <View key={idx} style={styles.recommendationItem}>
-                            <Text style={styles.recommendationText}>
+                            <Text
+                              style={[
+                                styles.recommendationText,
+                                isSmallScreen && styles.recommendationTextSmall,
+                              ]}
+                            >
                               • {rec}
                             </Text>
                           </View>
                         ))}
                       </View>
                     )}
-
-                    {result.extracted_text &&
-                      result.extracted_text !== "No text detected" && (
-                        <View style={styles.section}>
-                          <Text style={styles.sectionTitle}>Detected Text</Text>
-                          <Text style={styles.extractedText}>
-                            {result.extracted_text}
-                          </Text>
-                        </View>
-                      )}
                   </>
                 )}
               </>
             )}
           </View>
         )}
-
         <Modal
           visible={showModeModal}
           transparent={true}
-          animationType="slide"
+          animationType="fade"
           onRequestClose={() => setShowModeModal(false)}
         >
-          <View style={styles.modalOverlay}>
-            <View style={styles.modalContent}>
-              <Text style={styles.modalTitle}>Select Analysis Mode</Text>
-
+          <TouchableOpacity
+            style={styles.modalOverlay}
+            activeOpacity={1}
+            onPress={() => setShowModeModal(false)}
+          >
+            <View
+              style={[
+                styles.modalContent,
+                isSmallScreen && styles.modalContentSmall,
+              ]}
+            >
+              <Text
+                style={[
+                  styles.modalTitle,
+                  isSmallScreen && styles.modalTitleSmall,
+                ]}
+              >
+                Select Analysis Mode
+              </Text>
               <TouchableOpacity
                 style={[
                   styles.modeOption,
+                  isSmallScreen && styles.modeOptionSmall,
                   mode === "advanced" && styles.modeOptionSelected,
                 ]}
                 onPress={() => {
@@ -921,16 +1353,33 @@ export default function HomeScreen() {
                   setShowModeModal(false);
                 }}
               >
-                <Text style={styles.modeOptionTitle}>Advanced Analysis</Text>
-                <Text style={styles.modeOptionDesc}>
-                  Detailed classification with 9 waste categories, disposal
-                  instructions, recycling codes, and environmental guidance
-                </Text>
+                <View style={styles.modeOptionIcon}>
+                  <RecycleIcon />
+                </View>
+                <View style={styles.modeOptionContent}>
+                  <Text
+                    style={[
+                      styles.modeOptionTitle,
+                      isSmallScreen && styles.modeOptionTitleSmall,
+                    ]}
+                  >
+                    Advanced Analysis
+                  </Text>
+                  <Text
+                    style={[
+                      styles.modeOptionDesc,
+                      isSmallScreen && styles.modeOptionDescSmall,
+                    ]}
+                  >
+                    Detailed classification with 9 waste categories, disposal
+                    instructions, and environmental guidance
+                  </Text>
+                </View>
               </TouchableOpacity>
-
               <TouchableOpacity
                 style={[
                   styles.modeOption,
+                  isSmallScreen && styles.modeOptionSmall,
                   mode === "simple" && styles.modeOptionSelected,
                 ]}
                 onPress={() => {
@@ -938,314 +1387,502 @@ export default function HomeScreen() {
                   setShowModeModal(false);
                 }}
               >
-                <Text style={styles.modeOptionTitle}>
-                  Simple Classification
-                </Text>
-                <Text style={styles.modeOptionDesc}>
-                  Quick three-category classification: recyclable, organic, or
-                  landfill waste
-                </Text>
-              </TouchableOpacity>
-
-              <TouchableOpacity
-                style={styles.modalCloseButton}
-                onPress={() => setShowModeModal(false)}
-              >
-                <Text style={styles.modalCloseButtonText}>Cancel</Text>
+                <View style={styles.modeOptionIcon}>
+                  <AnalyzeIcon />
+                </View>
+                <View style={styles.modeOptionContent}>
+                  <Text
+                    style={[
+                      styles.modeOptionTitle,
+                      isSmallScreen && styles.modeOptionTitleSmall,
+                    ]}
+                  >
+                    Simple Mode
+                  </Text>
+                  <Text
+                    style={[
+                      styles.modeOptionDesc,
+                      isSmallScreen && styles.modeOptionDescSmall,
+                    ]}
+                  >
+                    Quick three-category classification: recyclable, organic, or
+                    landfill waste
+                  </Text>
+                </View>
               </TouchableOpacity>
             </View>
-          </View>
+          </TouchableOpacity>
         </Modal>
       </ScrollView>
-    </View>
+    </SafeAreaView>
   );
 }
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: "#F8FCF9",
+    backgroundColor: "#FAFBFC",
   },
-  scrollView: {
-    flex: 1,
-    paddingHorizontal: 20,
-    paddingTop: 20,
-  },
-  topBar: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-    backgroundColor: "#065F46",
-    paddingHorizontal: 20,
-    paddingVertical: 16,
-    paddingTop: 50,
+  header: {
+    backgroundColor: "#0F766E",
     shadowColor: "#000",
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.1,
     shadowRadius: 8,
     elevation: 4,
+    paddingTop: Platform.OS === "ios" ? 40 : 20,
+    paddingBottom: 20,
   },
-  menuButton: {
-    padding: 4,
+  headerSmall: {
+    paddingTop: Platform.OS === "ios" ? 30 : 15,
+    paddingBottom: 16,
+  },
+  headerContent: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    paddingHorizontal: 20,
+  },
+  headerContentLarge: {
+    paddingHorizontal: 32,
+    maxWidth: 1200,
+    alignSelf: "center",
+    width: "100%",
+  },
+  logoContainer: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 12,
   },
   titleContainer: {
+    flexDirection: "column",
+  },
+  appName: {
+    fontWeight: "700",
+    color: "#FFFFFF",
+    fontSize: 24,
+  },
+  appNameSmall: {
+    fontSize: 20,
+  },
+  appTagline: {
+    color: "#D1FAE5",
+    fontWeight: "400",
+    fontSize: 14,
+  },
+  appTaglineSmall: {
+    fontSize: 12,
+  },
+  navDesktop: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 24,
+  },
+  navItem: {
     flexDirection: "row",
     alignItems: "center",
     gap: 8,
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+    borderRadius: 8,
   },
-  topBarTitle: {
-    fontSize: 20,
-    fontWeight: "700",
+  navText: {
     color: "#FFFFFF",
-  },
-  placeholder: {
-    width: 24,
-  },
-  sidebarOverlay: {
-    flex: 1,
-    backgroundColor: "rgba(0, 0, 0, 0.5)",
-  },
-  sidebarContent: {
-    width: "80%",
-    height: "100%",
-    backgroundColor: "#FFFFFF",
-    paddingTop: 60,
-    paddingHorizontal: 20,
-  },
-  sidebarHeader: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
-    marginBottom: 30,
-    paddingBottom: 20,
-    borderBottomWidth: 1,
-    borderBottomColor: "#E5E7EB",
-  },
-  sidebarTitle: {
-    fontSize: 24,
-    fontWeight: "700",
-    color: "#064E3B",
-  },
-  sidebarItem: {
-    paddingVertical: 16,
-    borderBottomWidth: 1,
-    borderBottomColor: "#F3F4F6",
-  },
-  sidebarItemText: {
-    fontSize: 16,
-    fontWeight: "600",
-    color: "#374151",
-  },
-  header: {
-    alignItems: "center",
-    marginBottom: 30,
-  },
-  subtitle: {
-    fontSize: 16,
-    color: "#047857",
-    marginBottom: 16,
+    fontSize: 14,
     fontWeight: "500",
   },
-  modeButton: {
-    backgroundColor: "#ECFDF5",
-    paddingHorizontal: 20,
-    paddingVertical: 10,
-    borderRadius: 20,
-    borderWidth: 1,
-    borderColor: "#A7F3D0",
-  },
-  modeButtonText: {
-    color: "#065F46",
-    fontWeight: "600",
-    fontSize: 14,
-  },
-  card: {
-    backgroundColor: "#FFFFFF",
-    padding: 24,
-    borderRadius: 20,
-    marginBottom: 16,
-    shadowColor: "#064E3B",
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.1,
-    shadowRadius: 12,
-    elevation: 5,
-    borderWidth: 1,
-    borderColor: "#F0FDF4",
-  },
-  cardHeader: {
+  navMobile: {
     flexDirection: "row",
     alignItems: "center",
-    gap: 12,
+    gap: 16,
+  },
+  navIconButton: {
+    padding: 8,
+  },
+  scrollView: {
+    flex: 1,
+  },
+  scrollContent: {
+    flexGrow: 1,
+  },
+  scrollContentSmall: {
+    paddingHorizontal: 16,
+    paddingVertical: 20,
+  },
+  scrollContentMedium: {
+    paddingHorizontal: 24,
+    paddingVertical: 24,
+  },
+  scrollContentLarge: {
+    paddingHorizontal: 32,
+    paddingVertical: 32,
+    maxWidth: 1200,
+    alignSelf: "center",
+    width: "100%",
+  },
+  heroSection: {
+    marginBottom: 32,
+  },
+  heroSectionSmall: {
+    marginBottom: 24,
+  },
+  heroTitle: {
+    fontWeight: "700",
+    color: "#0F172A",
+    fontSize: 40,
+    marginBottom: 12,
+  },
+  heroTitleSmall: {
+    fontSize: 28,
     marginBottom: 8,
   },
-  cardTitle: {
-    fontSize: 20,
-    fontWeight: "700",
-    color: "#064E3B",
+  heroSubtitle: {
+    color: "#64748B",
+    fontSize: 18,
+    lineHeight: 24,
   },
-  cardDescription: {
+  heroSubtitleSmall: {
+    fontSize: 16,
+    lineHeight: 22,
+  },
+  modeSelector: {
+    backgroundColor: "#FFFFFF",
+    borderRadius: 16,
+    marginBottom: 32,
+    shadowColor: "#0F172A",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.05,
+    shadowRadius: 8,
+    elevation: 2,
+    borderWidth: 1,
+    borderColor: "#F1F5F9",
+    padding: 24,
+  },
+  modeSelectorSmall: {
+    padding: 20,
+    marginBottom: 24,
+  },
+  modeSelectorHeader: {
+    flexDirection: "row",
+    alignItems: "center",
+    marginBottom: 12,
+  },
+  modeIcon: {
+    marginRight: 16,
+  },
+  modeInfo: {
+    flex: 1,
+  },
+  modeTitle: {
+    fontWeight: "600",
+    color: "#0F172A",
+    fontSize: 20,
+    marginBottom: 4,
+  },
+  modeTitleSmall: {
+    fontSize: 18,
+  },
+  modeDescription: {
+    color: "#64748B",
+    fontSize: 15,
+  },
+  modeDescriptionSmall: {
     fontSize: 14,
-    color: "#047857",
+  },
+  modeChangeText: {
+    color: "#0F766E",
+    fontWeight: "500",
+    textAlign: "center",
+    fontSize: 14,
+  },
+  modeChangeTextSmall: {
+    fontSize: 13,
+  },
+  featuresGrid: {
+    flexDirection: "row",
+    flexWrap: "wrap",
+    marginBottom: 32,
+  },
+  featuresGridSmall: {
+    flexDirection: "column",
+    gap: 20,
+  },
+  featuresGridMedium: {
+    flexDirection: "row",
+    gap: 24,
+  },
+  featureCard: {
+    backgroundColor: "#FFFFFF",
+    borderRadius: 16,
+    shadowColor: "#0F172A",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.05,
+    shadowRadius: 8,
+    elevation: 2,
+    borderWidth: 1,
+    borderColor: "#F1F5F9",
+    padding: 24,
+  },
+  featureCardSmall: {
+    width: "100%",
+    padding: 20,
+  },
+  featureCardLarge: {
+    flex: 1,
+    minWidth: 300,
+  },
+  featureIconContainer: {
+    marginBottom: 16,
+  },
+  featureTitle: {
+    fontWeight: "600",
+    color: "#0F172A",
+    fontSize: 20,
+    marginBottom: 8,
+  },
+  featureTitleSmall: {
+    fontSize: 18,
+  },
+  featureDescription: {
+    color: "#64748B",
+    fontSize: 15,
     marginBottom: 20,
+    lineHeight: 22,
+  },
+  featureDescriptionSmall: {
+    fontSize: 14,
     lineHeight: 20,
   },
-  buttonRow: {
+  featureActions: {
     flexDirection: "row",
+    gap: 16,
+  },
+  featureActionsSmall: {
     gap: 12,
   },
-  primaryButton: {
-    backgroundColor: "#065F46",
-    padding: 16,
-    borderRadius: 14,
+  featureButton: {
     flex: 1,
+    backgroundColor: "#0F766E",
+    flexDirection: "row",
     alignItems: "center",
     justifyContent: "center",
-    flexDirection: "row",
     gap: 8,
-    shadowColor: "#064E3B",
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.2,
-    shadowRadius: 8,
-    elevation: 4,
+    borderRadius: 10,
+    paddingVertical: 16,
   },
-  secondaryButton: {
-    backgroundColor: "#ECFDF5",
-    padding: 16,
-    borderRadius: 14,
-    alignItems: "center",
-    borderWidth: 1,
-    borderColor: "#A7F3D0",
+  featureButtonSmall: {
+    paddingVertical: 14,
   },
-  buttonText: {
+  featureButtonText: {
     color: "#FFFFFF",
     fontWeight: "600",
-    fontSize: 16,
+    fontSize: 15,
   },
-  secondaryButtonText: {
-    color: "#065F46",
-    fontWeight: "600",
-    fontSize: 16,
-  },
-  imagePreview: {
-    backgroundColor: "#FFFFFF",
-    padding: 16,
-    borderRadius: 20,
-    marginBottom: 16,
+  productAnalysisButton: {
+    backgroundColor: "#8B5CF6",
+    flexDirection: "row",
     alignItems: "center",
+    justifyContent: "center",
+    gap: 8,
+    borderRadius: 10,
+    paddingVertical: 16,
+  },
+  productAnalysisButtonSmall: {
+    paddingVertical: 14,
+  },
+  productAnalysisButtonText: {
+    color: "#FFFFFF",
+    fontWeight: "600",
+    fontSize: 15,
+  },
+  imagePreviewCard: {
+    backgroundColor: "#FFFFFF",
+    borderRadius: 16,
+    marginBottom: 32,
+    shadowColor: "#0F172A",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.05,
+    shadowRadius: 8,
+    elevation: 2,
     borderWidth: 1,
-    borderColor: "#F0FDF4",
+    borderColor: "#F1F5F9",
+    padding: 24,
+  },
+  imagePreviewCardSmall: {
+    padding: 20,
+    marginBottom: 24,
   },
   previewTitle: {
-    fontSize: 14,
     fontWeight: "600",
-    color: "#047857",
+    color: "#0F172A",
+    fontSize: 18,
     marginBottom: 12,
+  },
+  previewTitleSmall: {
+    fontSize: 16,
   },
   previewImage: {
     width: "100%",
-    height: 200,
+    height: 300,
     borderRadius: 12,
+  },
+  previewImageSmall: {
+    height: 200,
   },
   loadingCard: {
     backgroundColor: "#FFFFFF",
-    padding: 40,
-    borderRadius: 20,
+    borderRadius: 16,
     alignItems: "center",
-    marginBottom: 16,
+    marginBottom: 32,
+    shadowColor: "#0F172A",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.05,
+    shadowRadius: 8,
+    elevation: 2,
     borderWidth: 1,
-    borderColor: "#F0FDF4",
+    borderColor: "#F1F5F9",
+    padding: 48,
+  },
+  loadingCardSmall: {
+    padding: 40,
+    marginBottom: 24,
   },
   loadingText: {
-    marginTop: 16,
-    color: "#047857",
+    fontWeight: "600",
+    color: "#0F172A",
+    fontSize: 18,
+    marginTop: 24,
+    marginBottom: 4,
+  },
+  loadingTextSmall: {
     fontSize: 16,
-    fontWeight: "500",
+    marginTop: 20,
+  },
+  loadingSubtext: {
+    color: "#64748B",
+    fontSize: 15,
+  },
+  loadingSubtextSmall: {
+    fontSize: 14,
   },
   resultCard: {
     backgroundColor: "#FFFFFF",
-    padding: 24,
-    borderRadius: 20,
-    marginBottom: 30,
-    shadowColor: "#064E3B",
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.1,
-    shadowRadius: 12,
-    elevation: 5,
+    borderRadius: 16,
+    marginBottom: 40,
+    shadowColor: "#0F172A",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.05,
+    shadowRadius: 8,
+    elevation: 2,
     borderWidth: 1,
-    borderColor: "#F0FDF4",
+    borderColor: "#F1F5F9",
+    padding: 32,
+  },
+  resultCardSmall: {
+    padding: 20,
+    marginBottom: 32,
   },
   resultHeader: {
     flexDirection: "row",
     alignItems: "center",
-    gap: 16,
-    marginBottom: 20,
-    paddingBottom: 20,
+    marginBottom: 24,
+    paddingBottom: 24,
     borderBottomWidth: 1,
-    borderBottomColor: "#ECFDF5",
+    borderBottomColor: "#F1F5F9",
   },
   resultHeaderText: {
     flex: 1,
+    marginLeft: 16,
   },
   resultTitle: {
-    fontSize: 24,
     fontWeight: "700",
-    color: "#064E3B",
+    color: "#0F172A",
+    fontSize: 28,
     marginBottom: 4,
   },
+  resultTitleSmall: {
+    fontSize: 20,
+  },
   resultType: {
-    fontSize: 16,
     fontWeight: "600",
+    fontSize: 18,
+  },
+  resultTypeSmall: {
+    fontSize: 16,
   },
   confidenceBar: {
     marginBottom: 24,
   },
   confidenceLabel: {
-    fontSize: 14,
     fontWeight: "600",
-    color: "#047857",
-    marginBottom: 8,
+    color: "#64748B",
+    fontSize: 15,
+    marginBottom: 12,
+  },
+  confidenceLabelSmall: {
+    fontSize: 14,
+  },
+  progressContainer: {
+    flexDirection: "row",
+    alignItems: "center",
   },
   progressBar: {
+    flex: 1,
     height: 8,
     backgroundColor: "#E5E7EB",
     borderRadius: 4,
     overflow: "hidden",
-    marginBottom: 4,
+    marginRight: 12,
   },
   progressFill: {
     height: "100%",
     borderRadius: 4,
   },
   confidenceValue: {
-    fontSize: 14,
     fontWeight: "700",
-    color: "#064E3B",
+    color: "#0F172A",
+    fontSize: 18,
+    width: 70,
     textAlign: "right",
+  },
+  confidenceValueSmall: {
+    fontSize: 16,
+    width: 60,
   },
   section: {
     marginBottom: 20,
   },
   sectionTitle: {
-    fontSize: 16,
     fontWeight: "700",
-    color: "#064E3B",
+    color: "#0F172A",
+    fontSize: 18,
     marginBottom: 12,
   },
+  sectionTitleSmall: {
+    fontSize: 16,
+  },
   sectionContent: {
-    fontSize: 15,
     color: "#374151",
+    fontSize: 16,
     lineHeight: 22,
   },
+  sectionContentSmall: {
+    fontSize: 15,
+    lineHeight: 20,
+  },
   badge: {
-    backgroundColor: "#065F46",
-    paddingHorizontal: 16,
-    paddingVertical: 8,
+    backgroundColor: "#0F766E",
     borderRadius: 8,
     alignSelf: "flex-start",
+    paddingHorizontal: 20,
+    paddingVertical: 12,
   },
   badgeText: {
     color: "#FFFFFF",
     fontWeight: "700",
+    fontSize: 18,
+  },
+  badgeTextSmall: {
     fontSize: 16,
   },
   chipContainer: {
@@ -1254,250 +1891,314 @@ const styles = StyleSheet.create({
     gap: 8,
   },
   chip: {
-    backgroundColor: "#ECFDF5",
-    paddingHorizontal: 12,
-    paddingVertical: 6,
+    backgroundColor: "#F0FDF4",
     borderRadius: 16,
     borderWidth: 1,
     borderColor: "#A7F3D0",
+    paddingHorizontal: 16,
+    paddingVertical: 8,
   },
   chipText: {
-    fontSize: 13,
     color: "#065F46",
     fontWeight: "500",
+    fontSize: 14,
+  },
+  chipTextSmall: {
+    fontSize: 13,
   },
   warningSection: {
     backgroundColor: "#FFFBEB",
-    padding: 16,
     borderRadius: 12,
     borderLeftWidth: 4,
     borderLeftColor: "#D97706",
+    padding: 20,
   },
   warningSectionHeader: {
     flexDirection: "row",
     alignItems: "center",
-    gap: 8,
+    gap: 12,
     marginBottom: 8,
   },
   warningText: {
-    fontSize: 14,
     color: "#92400E",
-    marginTop: 4,
+    fontSize: 15,
     lineHeight: 20,
+    marginTop: 6,
+  },
+  warningTextSmall: {
+    fontSize: 14,
+    marginTop: 4,
   },
   tipText: {
-    fontSize: 14,
     color: "#374151",
-    marginTop: 6,
+    fontSize: 15,
     lineHeight: 20,
+    marginTop: 8,
+  },
+  tipTextSmall: {
+    fontSize: 14,
+    marginTop: 6,
   },
   simpleResult: {
-    padding: 24,
     borderRadius: 12,
     borderWidth: 3,
     alignItems: "center",
     marginBottom: 20,
-    backgroundColor: "#F8FCF9",
+    backgroundColor: "#F8FAFC",
+    padding: 40,
+  },
+  simpleResultSmall: {
+    padding: 24,
   },
   simpleResultText: {
-    fontSize: 28,
     fontWeight: "700",
-    marginBottom: 8,
+    fontSize: 40,
+    marginBottom: 12,
+  },
+  simpleResultTextSmall: {
+    fontSize: 28,
   },
   confidenceText: {
-    fontSize: 16,
-    color: "#047857",
+    color: "#64748B",
     fontWeight: "500",
+    fontSize: 18,
+  },
+  confidenceTextSmall: {
+    fontSize: 16,
   },
   scoreSection: {
     alignItems: "center",
     marginBottom: 24,
     paddingBottom: 24,
     borderBottomWidth: 1,
-    borderBottomColor: "#ECFDF5",
+    borderBottomColor: "#F1F5F9",
   },
-  
+  scoreLabel: {
+    color: "#64748B",
+    fontWeight: "600",
+    fontSize: 15,
+    marginBottom: 16,
+  },
+  scoreLabelSmall: {
+    fontSize: 14,
+  },
   scoreDisplay: {
     flexDirection: "row",
     alignItems: "baseline",
-    marginBottom: 12,
+    marginBottom: 20,
   },
   scoreValue: {
-    fontSize: 48,
     fontWeight: "700",
-    color: "#065F46",
+    color: "#0F172A",
+    fontSize: 64,
+  },
+  scoreValueSmall: {
+    fontSize: 48,
   },
   scoreMax: {
+    color: "#64748B",
+    fontSize: 32,
+    marginLeft: 8,
+  },
+  scoreMaxSmall: {
     fontSize: 24,
-    color: "#047857",
     marginLeft: 4,
   },
-  starsRow: {
-    flexDirection: "row",
-    gap: 4,
-  },
-  errorContainer: {
-    alignItems: "center",
-    padding: 20,
-  },
-  errorTitle: {
-    fontSize: 20,
-    fontWeight: "700",
-    color: "#DC2626",
-    marginBottom: 8,
-  },
-  errorDetail: {
-    fontSize: 16,
-    color: "#6B7280",
-    textAlign: "center",
-    marginBottom: 16,
-    lineHeight: 22,
-  },
-  errorHint: {
-    fontSize: 14,
-    color: "#9CA3AF",
-    textAlign: "center",
-    fontStyle: "italic",
-  },
-  modalOverlay: {
-    flex: 1,
-    backgroundColor: "rgba(6, 78, 59, 0.4)",
-    justifyContent: "flex-end",
-  },
-  modalContent: {
-    backgroundColor: "#FFFFFF",
-    borderTopLeftRadius: 24,
-    borderTopRightRadius: 24,
-    padding: 24,
-    paddingBottom: 40,
-  },
-  modalTitle: {
-    fontSize: 20,
-    fontWeight: "700",
-    color: "#064E3B",
-    marginBottom: 20,
-    textAlign: "center",
-  },
-  modeOption: {
-    backgroundColor: "#F8FCF9",
-    padding: 20,
-    borderRadius: 16,
-    marginBottom: 12,
-    borderWidth: 2,
-    borderColor: "#ECFDF5",
-  },
-  modeOptionSelected: {
-    backgroundColor: "#ECFDF5",
-    borderColor: "#065F46",
-  },
-  modeOptionTitle: {
-    fontSize: 18,
-    fontWeight: "700",
-    color: "#064E3B",
-    marginBottom: 8,
-  },
-  modeOptionDesc: {
-    fontSize: 14,
-    color: "#047857",
-    lineHeight: 20,
-  },
-  modalCloseButton: {
-    backgroundColor: "#F8FCF9",
-    padding: 16,
-    borderRadius: 12,
-    alignItems: "center",
-    marginTop: 8,
-    borderWidth: 1,
-    borderColor: "#ECFDF5",
-  },
-  modalCloseButtonText: {
-    fontSize: 16,
-    fontWeight: "600",
-    color: "#047857",
-  },
   analysisMethod: {
+    color: "#8B5CF6",
+    fontWeight: "600",
     fontSize: 14,
-    color: "#059669",
-    fontWeight: "600" as const,
+    marginTop: 4,
+  },
+  analysisMethodSmall: {
+    fontSize: 13,
   },
   productDetailsSection: {
     backgroundColor: "#F0FDF4",
-    padding: 16,
     borderRadius: 12,
-    marginBottom: 20,
+    marginBottom: 24,
     borderWidth: 1,
     borderColor: "#A7F3D0",
+    padding: 24,
   },
   productInfo: {
-    marginTop: 8,
+    marginBottom: 16,
   },
   productName: {
-    fontSize: 18,
-    fontWeight: "700" as const,
+    fontWeight: "700",
     color: "#064E3B",
+    fontSize: 22,
     marginBottom: 4,
   },
+  productNameSmall: {
+    fontSize: 18,
+  },
   productBrand: {
-    fontSize: 14,
-    fontWeight: "600" as const,
+    fontWeight: "600",
     color: "#047857",
+    fontSize: 16,
     marginBottom: 8,
   },
+  productBrandSmall: {
+    fontSize: 14,
+  },
   productCategories: {
-    fontSize: 12,
     color: "#6B7280",
-    fontStyle: "italic" as const,
+    fontStyle: "italic",
+    fontSize: 14,
+  },
+  productCategoriesSmall: {
+    fontSize: 12,
   },
   scoresRow: {
-    flexDirection: "row" as const,
+    flexDirection: "row",
     gap: 12,
-    marginTop: 12,
   },
   scoreChip: {
     flex: 1,
     backgroundColor: "#FFFFFF",
-    padding: 12,
     borderRadius: 8,
-    alignItems: "center" as const,
+    alignItems: "center",
     borderWidth: 1,
     borderColor: "#E5E7EB",
-  },
-  scoreLabel: {
-    fontSize: 11,
-    color: "#6B7280",
-    marginBottom: 4,
-    fontWeight: "600" as const,
+    padding: 16,
   },
   scoreGrade: {
+    fontWeight: "700",
+    fontSize: 28,
+  },
+  scoreGradeSmall: {
     fontSize: 24,
-    fontWeight: "700" as const,
   },
   packagingScore: {
-    fontSize: 14,
     color: "#047857",
-    marginTop: 8,
-    fontWeight: "600" as const,
+    fontWeight: "600",
+    fontSize: 15,
+    marginTop: 12,
+  },
+  packagingScoreSmall: {
+    fontSize: 14,
   },
   keywordChip: {
     backgroundColor: "#DBEAFE",
-    paddingHorizontal: 12,
-    paddingVertical: 6,
     borderRadius: 16,
     borderWidth: 1,
     borderColor: "#93C5FD",
+    paddingHorizontal: 16,
+    paddingVertical: 8,
   },
   recommendationItem: {
     marginBottom: 8,
   },
   recommendationText: {
-    fontSize: 14,
     color: "#374151",
+    fontSize: 15,
     lineHeight: 20,
   },
-  extractedText: {
-    fontSize: 13,
+  recommendationTextSmall: {
+    fontSize: 14,
+  },
+  errorContainer: {
+    alignItems: "center",
+    padding: 32,
+  },
+  errorTitle: {
+    fontWeight: "700",
+    color: "#DC2626",
+    fontSize: 24,
+    marginBottom: 12,
+  },
+  errorTitleSmall: {
+    fontSize: 20,
+  },
+  errorDetail: {
     color: "#6B7280",
-    lineHeight: 18,
-    fontStyle: "italic" as const,
+    fontSize: 18,
+    textAlign: "center",
+    marginBottom: 16,
+    lineHeight: 22,
+  },
+  errorDetailSmall: {
+    fontSize: 16,
+  },
+  errorHint: {
+    color: "#9CA3AF",
+    fontSize: 15,
+    textAlign: "center",
+  },
+  errorHintSmall: {
+    fontSize: 14,
+  },
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: "rgba(15, 23, 42, 0.4)",
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  modalContent: {
+    backgroundColor: "#FFFFFF",
+    borderRadius: 16,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.2,
+    shadowRadius: 16,
+    elevation: 8,
+    padding: 32,
+    width: 500,
+  },
+  modalContentSmall: {
+    padding: 24,
+    width: "90%",
+    margin: 20,
+  },
+  modalTitle: {
+    fontWeight: "700",
+    color: "#0F172A",
+    fontSize: 24,
+    textAlign: "center",
+    marginBottom: 32,
+  },
+  modalTitleSmall: {
+    fontSize: 20,
+    marginBottom: 24,
+  },
+  modeOption: {
+    flexDirection: "row",
+    backgroundColor: "#F8FAFC",
+    borderRadius: 12,
+    marginBottom: 16,
+    borderWidth: 2,
+    borderColor: "#F1F5F9",
+    padding: 24,
+  },
+  modeOptionSmall: {
+    padding: 20,
+  },
+  modeOptionSelected: {
+    backgroundColor: "#F0FDF4",
+    borderColor: "#0F766E",
+  },
+  modeOptionIcon: {
+    marginRight: 16,
+  },
+  modeOptionContent: {
+    flex: 1,
+  },
+  modeOptionTitle: {
+    fontWeight: "700",
+    color: "#0F172A",
+    fontSize: 20,
+    marginBottom: 8,
+  },
+  modeOptionTitleSmall: {
+    fontSize: 18,
+  },
+  modeOptionDesc: {
+    color: "#64748B",
+    fontSize: 15,
+    lineHeight: 20,
+  },
+  modeOptionDescSmall: {
+    fontSize: 14,
   },
 });

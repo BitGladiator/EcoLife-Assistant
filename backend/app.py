@@ -7,7 +7,6 @@ from flask_cors import CORS
 from advanced_classifier import AdvancedWasteClassifier
 from waste_classifier import WasteClassifier
 from product_analyzer import ProductAnalyzer
-# FIXED IMPORT: Use get_auth_manager instead of AuthManager
 from auth_manager import get_auth_manager, token_required
 from community_manager import CommunityManager
 from impact_calculator import ImpactCalculator
