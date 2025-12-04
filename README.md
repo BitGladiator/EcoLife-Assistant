@@ -76,6 +76,37 @@ flowchart TD
     O --> Q
     P --> Q
 ```
+## Screenshots
+
+## Home Page
+
+Main dashboard with camera & gallery buttons for waste classification.
+
+![Home-Page](mobile-app/EcoLifeMobile/assets/images/intelligent-waste-analysis.webp)
+
+
+### Profile Page
+
+User statistics, environmental impact metrics, and achievements.
+
+![Profile-Page](mobile-app/EcoLifeMobile/assets/images/profile-page.webp)
+
+### Login Page
+
+Authentication screen with username/password fields and mode toggle.
+
+![Login-Page](mobile-app/EcoLifeMobile/assets/images/signup-page.webp)
+
+## Advanced Waste Analaysis
+
+Detailed waste classification results with recycling codes and disposal instructions.
+
+![Advanced-Waste-Analysis](mobile-app/EcoLifeMobile/assets/images/advance-waste-classification.webp)
+
+### Barcode Scanner
+Product sustainablity analysis using barcode/OCR scanning.
+
+![Barcode-image](mobile-app/EcoLifeMobile/assets/images/barcode-image.webp)
 
 ## Technical Implementation
 
